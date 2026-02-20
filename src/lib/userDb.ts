@@ -1,8 +1,8 @@
-import fs from "fs";
-import path from "path";
 import bcrypt from "bcryptjs";
+import clientPromise from "@/lib/mongodb";
 
-const DB_PATH = path.join(process.cwd(), "data", "users.json");
+const DB_NAME = "vibeanime";
+const COLLECTION = "users";
 
 export interface User {
   id: string;
@@ -12,63 +12,63 @@ export interface User {
   createdAt: string;
 }
 
-// In-memory cache — avoids re-reading the file on every request.
-// null means "not loaded yet"; [] means "empty file".
-let usersCache: User[] | null = null;
-
-function readFromDisk(): User[] {
-  try {
-    return JSON.parse(fs.readFileSync(DB_PATH, "utf-8")) as User[];
-  } catch {
-    return [];
-  }
+async function getCollection() {
+  const client = await clientPromise;
+  return client.db(DB_NAME).collection<User>(COLLECTION);
 }
 
-function writeToDisk(users: User[]): void {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
-  usersCache = users; // keep cache in sync
-}
-
-async function ensureDb(): Promise<User[]> {
-  if (usersCache !== null) return usersCache;
-
-  if (!fs.existsSync(DB_PATH)) {
-    // Seed a demo user using async hash — does not block the event loop
+// Seed demo user if the collection is empty
+async function maybeSeedDemo() {
+  const col = await getCollection();
+  await col.createIndex({ email: 1 }, { unique: true });
+  const count = await col.countDocuments();
+  if (count === 0) {
     const demoHash = await bcrypt.hash("demo123", 10);
-    const users: User[] = [
-      {
-        id: "demo-user-1",
-        name: "Demo User",
-        email: "demo@vibeanime.com",
-        passwordHash: demoHash,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-    writeToDisk(users);
-    return users;
+    await col.insertOne({
+      id: "demo-user-1",
+      name: "Demo User",
+      email: "demo@vibeanime.com",
+      passwordHash: demoHash,
+      createdAt: new Date().toISOString(),
+    });
   }
+}
 
-  usersCache = readFromDisk();
-  return usersCache;
+// Initialise once — runs lazily on first call
+let initialised = false;
+async function init() {
+  if (initialised) return;
+  await maybeSeedDemo();
+  initialised = true;
 }
 
 export async function getUsers(): Promise<User[]> {
-  return ensureDb();
+  await init();
+  const col = await getCollection();
+  return col.find({}, { projection: { _id: 0 } }).toArray();
 }
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
-  const users = await ensureDb();
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  await init();
+  const col = await getCollection();
+  const user = await col.findOne(
+    { email: email.toLowerCase() },
+    { projection: { _id: 0 } }
+  );
+  return user ?? undefined;
 }
 
-export async function createUser(name: string, email: string, password: string): Promise<User> {
-  const users = await ensureDb();
-  if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-    throw new Error("User already exists");
-  }
-  // Async hash — non-blocking
+export async function createUser(
+  name: string,
+  email: string,
+  password: string
+): Promise<User> {
+  await init();
+  const col = await getCollection();
+
+  const existing = await col.findOne({ email: email.toLowerCase() });
+  if (existing) throw new Error("User already exists");
+
   const passwordHash = await bcrypt.hash(password, 10);
   const newUser: User = {
     id: `user-${Date.now()}`,
@@ -77,12 +77,15 @@ export async function createUser(name: string, email: string, password: string):
     passwordHash,
     createdAt: new Date().toISOString(),
   };
-  const updated = [...users, newUser];
-  writeToDisk(updated);
+
+  await col.insertOne(newUser);
   return newUser;
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  hash: string
+): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
 

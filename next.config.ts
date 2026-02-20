@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   // Compress responses with gzip/brotli
   compress: true,
 
-  // Keep graphql-request as a server-side external (it's ESM-only in v7+)
-  serverExternalPackages: ["graphql-request"],
+  // Keep ESM-only / native packages as server-side externals
+  serverExternalPackages: ["graphql-request", "mongodb"],
 
   images: {
     // Serve modern formats (AVIF first, then WebP)
