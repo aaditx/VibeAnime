@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VibeAnime
+
+A fast, modern anime streaming site built with **Next.js 16**, **TypeScript**, and **Tailwind CSS**.
+
+## Features
+
+- ?? **Stream anime** via HiAnime (megaplay.buzz / vidwish.live embeds) — sub & dub
+- ?? **Search & filter** by genre, format, status, season, year, score
+- ?? **Anime detail pages** with episode lists, characters, trailers, and studio info
+- ?? **Watchlist** — saved locally, persisted across sessions
+- ?? **Continue Watching** — picks up where you left off
+- ?? **Recently Viewed** — quick access to browsing history
+- ?? **Auth** — register / login with JWT sessions
+- ? **Fast** — ISR caching, Suspense streaming, AVIF images, self-hosted fonts
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Anime data | AniList GraphQL API |
+| Episode data | HiAnime (aniwatch-api) |
+| Auth | NextAuth v5 (credentials) |
+| State | Zustand + localStorage persist |
+| Fonts | next/font/google (Bebas Neue, Space Grotesk) |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Set up environment
+cp .env.example .env.local
+# Edit .env.local and set AUTH_SECRET
+
+# 3. Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Demo account:** `demo@vibeanime.com` / `demo123`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy to Vercel
 
-## Learn More
+1. Push repo to GitHub
+2. Import in https://vercel.com
+3. Add environment variables:
+   - `AUTH_SECRET` — generate with: `openssl rand -base64 32`
+   - `NEXT_PUBLIC_BASE_URL` — your production URL (e.g. https://vibeanime.vercel.app)
+4. Deploy
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
++-- app/                  # Next.js App Router pages & API routes
+¦   +-- anime/[id]/       # Anime detail + watch pages
+¦   +-- api/              # API routes (search, streaming, auth)
+¦   +-- auth/             # Login & register pages
+¦   +-- genres/           # Genre browser
+¦   +-- search/           # Search & filter page
+¦   +-- watchlist/        # User watchlist page
++-- components/           # Reusable UI components
++-- lib/                  # API helpers (AniList, streaming, userDb)
++-- store/                # Zustand stores
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Data Sources
 
-## Deploy on Vercel
+- **AniList** (https://anilist.co) — anime metadata, images, scores
+- **HiAnime** via aniwatch-api — episode lists
+- **megaplay.buzz / vidwish.live** — video embeds
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> For educational purposes only. All content belongs to their respective owners.

@@ -20,10 +20,26 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "VibeAnime - Stream Anime Online",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.vercel.app"),
+  title: {
+    default: "VibeAnime - Stream Anime Online",
+    template: "%s | VibeAnime",
+  },
   description:
     "Watch trending and popular anime for free. Discover thousands of anime series and movies on VibeAnime.",
-  keywords: ["anime", "streaming", "watch anime", "anime online"],
+  keywords: ["anime", "streaming", "watch anime", "anime online", "free anime"],
+  openGraph: {
+    type: "website",
+    siteName: "VibeAnime",
+    title: "VibeAnime - Stream Anime Online",
+    description: "Watch trending and popular anime for free. Discover thousands of anime series and movies.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VibeAnime - Stream Anime Online",
+    description: "Watch trending and popular anime for free.",
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

@@ -251,28 +251,35 @@ export const getSeasonalAnime = cache(
   )
 );
 
-export const searchAnime = unstable_cache(
-  async (params: {
-    search?: string;
-    genre?: string;
-    year?: number;
-    season?: string;
-    format?: string;
-    status?: string;
-    sort?: string[];
-    page?: number;
-    perPage?: number;
-  }) => {
-    const data = await anilistClient.request<AnimePageResult>(SEARCH_ANIME, {
-      ...params,
-      page: params.page ?? 1,
-      perPage: params.perPage ?? 20,
-    });
-    return data.Page;
-  },
-  ["anilist-search"],
-  { revalidate: 300, tags: ["anilist", "search"] } // 5 min for search results
-);
+export const searchAnime = async (params: {
+  search?: string;
+  genre?: string;
+  year?: number;
+  season?: string;
+  format?: string;
+  status?: string;
+  sort?: string[];
+  page?: number;
+  perPage?: number;
+}) => {
+  // Build an explicit stable cache key from the sorted params so that
+  // { page:1, search:"naruto" } and { search:"naruto", page:1 } hit the same entry.
+  const { search, genre, year, season, format, status, sort, page = 1, perPage = 20 } = params;
+  const cacheKey = JSON.stringify({ search, genre, year, season, format, status, sort, page, perPage });
+
+  const fetcher = unstable_cache(
+    async () => {
+      const data = await anilistClient.request<AnimePageResult>(SEARCH_ANIME, {
+        search, genre, year, season, format, status, sort, page, perPage,
+      });
+      return data.Page;
+    },
+    ["anilist-search", cacheKey],
+    { revalidate: 300, tags: ["anilist", "search"] }
+  );
+
+  return fetcher();
+};
 
 // cache() wraps unstable_cache so generateMetadata + the page share the same
 // resolved value without a second AniList network call.

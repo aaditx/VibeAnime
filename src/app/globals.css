@@ -74,7 +74,7 @@ body {
 
 /* Logo text */
 .logo-text {
-  font-family: 'Bebas Neue', 'Space Grotesk', sans-serif;
+  font-family: var(--font-bebas), 'Space Grotesk', sans-serif;
   letter-spacing: 0.05em;
 }
 .logo-text-accent {
@@ -88,7 +88,7 @@ body {
 
 /* Section divider style */
 .section-label {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space), sans-serif;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;

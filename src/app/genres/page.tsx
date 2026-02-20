@@ -12,7 +12,7 @@ export default function GenresPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-5xl sm:text-7xl font-black text-white uppercase tracking-widest mb-3" style={{fontFamily:'Bebas Neue, sans-serif'}}>
+          <h1 className="text-5xl sm:text-7xl font-black text-white uppercase tracking-widest mb-3 font-display">
             Browse by <span className="text-[#e8002d]">Genre</span>
           </h1>
           <p className="text-[#8888aa] text-lg max-w-xl mx-auto">
