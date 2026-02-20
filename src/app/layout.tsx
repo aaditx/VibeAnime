@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description:
     "Watch trending and popular anime for free. Discover thousands of anime series and movies on VibeAnime.",
   keywords: ["anime", "streaming", "watch anime", "anime online"],
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

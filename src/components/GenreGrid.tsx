@@ -14,7 +14,7 @@ export default function GenreGrid({ compact = false }: GenreGridProps) {
   const genres = compact ? GENRES.slice(0, 8) : GENRES;
 
   return (
-    <div className={`grid gap-2 ${compact ? "grid-cols-4 sm:grid-cols-8" : "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"}`}>
+    <div className={`grid gap-2 ${compact ? "grid-cols-2 sm:grid-cols-4 md:grid-cols-8" : "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"}`}>
       {genres.map((genre) => (
         <Link
           key={genre}

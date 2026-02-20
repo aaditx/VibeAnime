@@ -37,7 +37,7 @@ export default function HeroSection({ animes }: HeroSectionProps) {
   const description = stripHtml(anime.description);
 
   return (
-    <section className="relative w-full h-[85vh] min-h-[560px] max-h-[820px] overflow-hidden">
+    <section className="relative w-full h-[60vh] sm:h-[85vh] min-h-[420px] sm:min-h-[560px] max-h-[820px] overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0">
         {anime.bannerImage ? (
@@ -139,7 +139,7 @@ export default function HeroSection({ animes }: HeroSectionProps) {
             </div>
 
             {/* Description */}
-            <p className="text-[#888] text-sm leading-relaxed line-clamp-3 max-w-lg">
+            <p className="text-[#888] text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 max-w-lg hidden sm:block">
               {description || "No description available."}
             </p>
 
@@ -147,14 +147,14 @@ export default function HeroSection({ animes }: HeroSectionProps) {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Link
                 href={`/anime/${anime.id}/watch/1`}
-                className="flex items-center gap-2 bg-[#e8002d] hover:bg-[#c8001d] text-white font-black px-8 py-3.5 uppercase tracking-widest text-sm transition-all hover:shadow-[0_0_20px_rgba(232,0,45,0.5)]"
+                className="flex items-center gap-2 bg-[#e8002d] hover:bg-[#c8001d] text-white font-black px-5 sm:px-8 py-2.5 sm:py-3.5 uppercase tracking-widest text-xs sm:text-sm transition-all hover:shadow-[0_0_20px_rgba(232,0,45,0.5)]"
               >
                 <Play className="w-4 h-4 fill-white" />
                 Watch Now
               </Link>
               <Link
                 href={`/anime/${anime.id}`}
-                className="flex items-center gap-2 border-2 border-white/30 hover:border-white text-white font-black px-7 py-3.5 uppercase tracking-widest text-sm transition-all hover:bg-white/10"
+                className="flex items-center gap-2 border-2 border-white/30 hover:border-white text-white font-black px-4 sm:px-7 py-2.5 sm:py-3.5 uppercase tracking-widest text-xs sm:text-sm transition-all hover:bg-white/10"
               >
                 <Info className="w-4 h-4" />
                 Details
@@ -188,8 +188,8 @@ export default function HeroSection({ animes }: HeroSectionProps) {
       {/* Bottom thumbnails + controls */}
       <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-[#1a1a1a] bg-black/60 backdrop-blur-sm">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          {/* Thumbnails */}
-          <div className="flex items-center gap-2">
+          {/* Thumbnails — hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-2">
             {animes.slice(0, 6).map((a, i) => {
               const t = getAnimeTitle(a.title);
               return (
@@ -213,6 +213,18 @@ export default function HeroSection({ animes }: HeroSectionProps) {
                 </button>
               );
             })}
+          </div>
+          {/* Mobile dot indicators */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            {animes.slice(0, 6).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className={`transition-all duration-200 ${
+                  i === current ? "w-4 h-1.5 bg-[#e8002d]" : "w-1.5 h-1.5 bg-[#333]"
+                }`}
+              />
+            ))}
           </div>
 
           {/* Prev / Next */}

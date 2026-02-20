@@ -76,10 +76,10 @@ export default async function AnimeDetailPage({ params }: Props) {
         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#e8002d]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-28 relative z-10">
-        <div className="flex gap-6 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-16 sm:-mt-28 relative z-10">
+        <div className="flex gap-4 sm:gap-6 mb-8">
           {/* Cover */}
-          <div className="flex-none w-32 sm:w-44 overflow-hidden border-2 border-[#e8002d] shadow-[0_0_30px_rgba(232,0,45,0.3)]">
+          <div className="flex-none w-24 sm:w-44 overflow-hidden border-2 border-[#e8002d] shadow-[0_0_30px_rgba(232,0,45,0.3)]">
             <Image
               src={anime.coverImage.extraLarge}
               alt={title}
@@ -90,7 +90,7 @@ export default async function AnimeDetailPage({ params }: Props) {
           </div>
 
           {/* Info */}
-          <div className="flex-1 pt-20 sm:pt-24">
+          <div className="flex-1 pt-12 sm:pt-24">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="text-[9px] font-black bg-[#e8002d] text-white px-2 py-1 uppercase tracking-widest">
                 {formatFormat(anime.format)}

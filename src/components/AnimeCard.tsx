@@ -83,7 +83,7 @@ export default function AnimeCard({ anime, size = "md", rank }: AnimeCardProps) 
               "absolute top-2 right-2 p-1.5 transition-all duration-200 z-10",
               inWatchlist
                 ? "bg-[#e8002d] text-white"
-                : "bg-black/70 border border-[#333] text-white/60 hover:text-white opacity-0 group-hover:opacity-100"
+                : "bg-black/70 border border-[#333] text-white/50 hover:text-white hover:border-[#e8002d]"
             )}
           >
             {inWatchlist ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}

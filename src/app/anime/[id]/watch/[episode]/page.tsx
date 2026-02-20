@@ -64,13 +64,14 @@ export default async function WatchPage({ params }: Props) {
     <div className="min-h-screen pt-14 bg-[#0a0a0a]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Back & Navigation */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-2">
           <Link
             href={`/anime/${animeId}`}
-            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#555] hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#555] hover:text-white transition-colors min-w-0"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to {title}
+            <ArrowLeft className="w-4 h-4 flex-none" />
+            <span className="truncate hidden sm:block">Back to {title}</span>
+            <span className="sm:hidden">Back</span>
           </Link>
           <div className="flex items-center gap-2">
             {prevEp && (
@@ -126,7 +127,7 @@ export default async function WatchPage({ params }: Props) {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-none">
+                <div className="hidden sm:flex items-center gap-2 flex-none">
                   {prevEp && (
                     <Link href={`/anime/${animeId}/watch/${prevEp}`} className="text-[10px] font-black uppercase tracking-wider bg-[#111] hover:bg-[#1a1a1a] border border-[#222] hover:border-[#e8002d] text-[#555] hover:text-white px-2.5 py-1.5 transition-colors">
                       &larr; EP {prevEp}

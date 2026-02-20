@@ -169,7 +169,7 @@ export default function Navbar() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="SEARCH ANIME..."
-                    className="bg-[#111] border-2 border-[#e8002d] text-white text-xs font-bold uppercase tracking-wider placeholder:normal-case placeholder:font-normal placeholder:tracking-normal rounded-none pl-9 pr-4 py-2 w-52 focus:outline-none transition-all"
+                    className="bg-[#111] border-2 border-[#e8002d] text-white text-xs font-bold uppercase tracking-wider placeholder:normal-case placeholder:font-normal placeholder:tracking-normal rounded-none pl-9 pr-4 py-2 w-36 sm:w-52 focus:outline-none transition-all"
                   />
                 </div>
                 <button type="button" onClick={() => setSearchOpen(false)} className="text-[#888] hover:text-white p-1">
