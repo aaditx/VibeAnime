@@ -9,6 +9,8 @@
  * Technique sourced from: github.com/devxoshakya/anveshna
  */
 
+import { unstable_cache } from "next/cache";
+
 const HIANIME_API = "https://aniwatch-api.vercel.app";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -131,14 +133,21 @@ export async function fetchHiAnimeEpisodes(hianimeId: string): Promise<AnimeEpis
 /**
  * Combined: search by title and fetch episodes.
  * Returns { hianimeId, episodes } where episodes is empty if search fails.
+ *
+ * Wrapped with unstable_cache so the two-step search→episodes flow is cached
+ * as a single unit per title for 6 hours across all requests.
  */
-export async function fetchEpisodesForAnime(title: string): Promise<{
-  hianimeId: string | null;
-  episodes: AnimeEpisode[];
-}> {
-  const hianimeId = await searchHiAnimeId(title);
-  if (!hianimeId) return { hianimeId: null, episodes: [] };
+export const fetchEpisodesForAnime = unstable_cache(
+  async (title: string): Promise<{
+    hianimeId: string | null;
+    episodes: AnimeEpisode[];
+  }> => {
+    const hianimeId = await searchHiAnimeId(title);
+    if (!hianimeId) return { hianimeId: null, episodes: [] };
 
-  const episodes = await fetchHiAnimeEpisodes(hianimeId);
-  return { hianimeId, episodes };
-}
+    const episodes = await fetchHiAnimeEpisodes(hianimeId);
+    return { hianimeId, episodes };
+  },
+  ["hianime-episodes"],
+  { revalidate: 21600, tags: ["hianime", "episodes"] } // 6 hours
+);

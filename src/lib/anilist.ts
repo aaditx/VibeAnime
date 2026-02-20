@@ -1,4 +1,6 @@
 import { GraphQLClient, gql } from "graphql-request";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 export const anilistClient = new GraphQLClient("https://graphql.anilist.co");
 
@@ -199,55 +201,96 @@ export const GET_ANIME_DETAIL = gql`
   }
 `;
 
-// ─── API Helpers ──────────────────────────────────────────────────────────
-export async function getTrendingAnime(page = 1, perPage = 20) {
-  const data = await anilistClient.request<AnimePageResult>(GET_TRENDING, { page, perPage });
-  return data.Page;
-}
+// ─── API Helpers (with Next.js Data Cache + React request deduplication) ──
 
-export async function getPopularAnime(page = 1, perPage = 20) {
-  const data = await anilistClient.request<AnimePageResult>(GET_POPULAR, { page, perPage });
-  return data.Page;
-}
+// unstable_cache persists results in the Next.js Data Cache across requests.
+// React cache() deduplicates identical calls within the same render pass
+// (e.g. generateMetadata + page both calling getAnimeDetail only hits AniList once).
 
-export async function getTopRatedAnime(page = 1, perPage = 20) {
-  const data = await anilistClient.request<AnimePageResult>(GET_TOP_RATED, { page, perPage });
-  return data.Page;
-}
+export const getTrendingAnime = cache(
+  unstable_cache(
+    async (page = 1, perPage = 20) => {
+      const data = await anilistClient.request<AnimePageResult>(GET_TRENDING, { page, perPage });
+      return data.Page;
+    },
+    ["anilist-trending"],
+    { revalidate: 3600, tags: ["anilist", "trending"] }
+  )
+);
 
-export async function getSeasonalAnime(season: string, year: number, page = 1, perPage = 20) {
-  const data = await anilistClient.request<AnimePageResult>(GET_SEASONAL, { season, year, page, perPage });
-  return data.Page;
-}
+export const getPopularAnime = cache(
+  unstable_cache(
+    async (page = 1, perPage = 20) => {
+      const data = await anilistClient.request<AnimePageResult>(GET_POPULAR, { page, perPage });
+      return data.Page;
+    },
+    ["anilist-popular"],
+    { revalidate: 3600, tags: ["anilist", "popular"] }
+  )
+);
 
-export async function searchAnime(params: {
-  search?: string;
-  genre?: string;
-  year?: number;
-  season?: string;
-  format?: string;
-  status?: string;
-  sort?: string[];
-  page?: number;
-  perPage?: number;
-}) {
-  const data = await anilistClient.request<AnimePageResult>(SEARCH_ANIME, {
-    ...params,
-    page: params.page ?? 1,
-    perPage: params.perPage ?? 20,
-  });
-  return data.Page;
-}
+export const getTopRatedAnime = cache(
+  unstable_cache(
+    async (page = 1, perPage = 20) => {
+      const data = await anilistClient.request<AnimePageResult>(GET_TOP_RATED, { page, perPage });
+      return data.Page;
+    },
+    ["anilist-top-rated"],
+    { revalidate: 3600, tags: ["anilist", "top-rated"] }
+  )
+);
 
-export async function getAnimeDetail(id: number) {
-  const data = await anilistClient.request<{ Media: Anime & {
-    studios: { edges: AnimeStudioEdge[] };
-    tags: AnimeTag[];
-    characters: { edges: AnimeCharacter[] };
-    trailer: { id: string; site: string } | null;
-  } }>(GET_ANIME_DETAIL, { id });
-  return data.Media;
-}
+export const getSeasonalAnime = cache(
+  unstable_cache(
+    async (season: string, year: number, page = 1, perPage = 20) => {
+      const data = await anilistClient.request<AnimePageResult>(GET_SEASONAL, { season, year, page, perPage });
+      return data.Page;
+    },
+    ["anilist-seasonal"],
+    { revalidate: 3600, tags: ["anilist", "seasonal"] }
+  )
+);
+
+export const searchAnime = unstable_cache(
+  async (params: {
+    search?: string;
+    genre?: string;
+    year?: number;
+    season?: string;
+    format?: string;
+    status?: string;
+    sort?: string[];
+    page?: number;
+    perPage?: number;
+  }) => {
+    const data = await anilistClient.request<AnimePageResult>(SEARCH_ANIME, {
+      ...params,
+      page: params.page ?? 1,
+      perPage: params.perPage ?? 20,
+    });
+    return data.Page;
+  },
+  ["anilist-search"],
+  { revalidate: 300, tags: ["anilist", "search"] } // 5 min for search results
+);
+
+// cache() wraps unstable_cache so generateMetadata + the page share the same
+// resolved value without a second AniList network call.
+export const getAnimeDetail = cache(
+  unstable_cache(
+    async (id: number) => {
+      const data = await anilistClient.request<{ Media: Anime & {
+        studios: { edges: AnimeStudioEdge[] };
+        tags: AnimeTag[];
+        characters: { edges: AnimeCharacter[] };
+        trailer: { id: string; site: string } | null;
+      } }>(GET_ANIME_DETAIL, { id });
+      return data.Media;
+    },
+    ["anilist-anime-detail"],
+    { revalidate: 3600, tags: ["anilist", "anime-detail"] }
+  )
+);
 
 // ─── Constants ────────────────────────────────────────────────────────────
 export const GENRES = [

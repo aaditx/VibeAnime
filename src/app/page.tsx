@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import HeroSection from "@/components/HeroSection";
 import AnimeRow from "@/components/AnimeRow";
 import AnimeTicker from "@/components/AnimeTicker";
 import GenreGrid from "@/components/GenreGrid";
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import RecentlyViewedRow from "@/components/RecentlyViewedRow";
+import RowSkeleton from "@/components/RowSkeleton";
 import {
   getTrendingAnime,
   getPopularAnime,
@@ -11,7 +13,6 @@ import {
   getSeasonalAnime,
 } from "@/lib/anilist";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 
 export const revalidate = 3600; // revalidate every hour
 
@@ -25,25 +26,78 @@ function getCurrentSeason(): { season: string; year: number } {
   return { season, year };
 }
 
-export default async function HomePage() {
-  const { season, year } = getCurrentSeason();
+// ─── Async streaming row components ─────────────────────────────────────────
 
-  const [trending, popular, topRated, seasonal] = await Promise.all([
-    getTrendingAnime(1, 15),
-    getPopularAnime(1, 15),
-    getTopRatedAnime(1, 15),
-    getSeasonalAnime(season, year, 1, 15),
-  ]);
-
+async function HeroAndTicker() {
+  const trending = await getTrendingAnime(1, 15);
   const heroAnimes = trending.media.slice(0, 6).filter((a) => a.bannerImage);
+  return (
+    <>
+      <HeroSection animes={heroAnimes.length >= 3 ? heroAnimes : trending.media.slice(0, 6)} />
+      <AnimeTicker animes={trending.media} />
+    </>
+  );
+}
 
+async function TrendingRow() {
+  const trending = await getTrendingAnime(1, 15);
+  return (
+    <AnimeRow
+      title="Trending Now"
+      animes={trending.media}
+      viewAllHref="/search?sort=TRENDING_DESC"
+    />
+  );
+}
+
+async function SeasonalRow() {
+  const { season, year } = getCurrentSeason();
+  const seasonal = await getSeasonalAnime(season, year, 1, 15);
+  return (
+    <AnimeRow
+      title={`${season.charAt(0) + season.slice(1).toLowerCase()} ${year}`}
+      animes={seasonal.media}
+      viewAllHref={`/search?season=${season}&year=${year}`}
+    />
+  );
+}
+
+async function PopularRow() {
+  const popular = await getPopularAnime(1, 15);
+  return (
+    <AnimeRow
+      title="Most Popular"
+      animes={popular.media}
+      viewAllHref="/search?sort=POPULARITY_DESC"
+    />
+  );
+}
+
+async function TopRatedRow() {
+  const topRated = await getTopRatedAnime(1, 15);
+  return (
+    <AnimeRow
+      title="Top Rated"
+      animes={topRated.media}
+      viewAllHref="/search?sort=SCORE_DESC"
+      showRank
+    />
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function HomePage() {
   return (
     <div className="min-h-screen">
-      {/* Hero */}
-      <HeroSection animes={heroAnimes.length >= 3 ? heroAnimes : trending.media.slice(0, 6)} />
-
-      {/* Trending ticker */}
-      <AnimeTicker animes={trending.media} />
+      {/* Hero + Ticker — streams in first */}
+      <Suspense
+        fallback={
+          <div className="w-full h-[60vh] sm:h-[85vh] min-h-[420px] sm:min-h-[560px] max-h-[820px] bg-[#0d0d0d] animate-pulse" />
+        }
+      >
+        <HeroAndTicker />
+      </Suspense>
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-2">
@@ -53,11 +107,10 @@ export default async function HomePage() {
         {/* Recently Viewed — client component */}
         <RecentlyViewedRow />
 
-        <AnimeRow
-          title="Trending Now"
-          animes={trending.media}
-          viewAllHref="/search?sort=TRENDING_DESC"
-        />
+        {/* Trending — streamed */}
+        <Suspense fallback={<RowSkeleton title="Trending Now" />}>
+          <TrendingRow />
+        </Suspense>
 
         {/* Browse by Genre */}
         <section className="mb-12">
@@ -76,23 +129,22 @@ export default async function HomePage() {
           <GenreGrid compact />
         </section>
 
-        <AnimeRow
-          title={`${season.charAt(0) + season.slice(1).toLowerCase()} ${year}`}
-          animes={seasonal.media}
-          viewAllHref={`/search?season=${season}&year=${year}`}
-        />
-        <AnimeRow
-          title="Most Popular"
-          animes={popular.media}
-          viewAllHref="/search?sort=POPULARITY_DESC"
-        />
-        <AnimeRow
-          title="Top Rated"
-          animes={topRated.media}
-          viewAllHref="/search?sort=SCORE_DESC"
-          showRank
-        />
+        {/* Seasonal — streamed */}
+        <Suspense fallback={<RowSkeleton />}>
+          <SeasonalRow />
+        </Suspense>
+
+        {/* Popular — streamed */}
+        <Suspense fallback={<RowSkeleton title="Most Popular" />}>
+          <PopularRow />
+        </Suspense>
+
+        {/* Top Rated — streamed */}
+        <Suspense fallback={<RowSkeleton title="Top Rated" />}>
+          <TopRatedRow />
+        </Suspense>
       </div>
     </div>
   );
 }
+

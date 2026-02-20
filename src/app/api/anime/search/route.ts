@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAnime } from "@/lib/anilist";
 
+export const revalidate = 300; // cache search results for 5 minutes
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 

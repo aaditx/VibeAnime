@@ -73,7 +73,11 @@ export default function VideoPlayer({
           {sources.map((src) => (
             <button
               key={src}
-              onClick={() => { setSource(src); setIframeKey((k) => k + 1); }}
+              onClick={() => {
+                if (src === source) return; // already active — don't reload
+                setSource(src);
+                setIframeKey((k) => k + 1);
+              }}
               className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 transition-colors ${
                 source === src
                   ? "bg-[#e8002d] text-white"

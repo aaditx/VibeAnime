@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
-    const user = createUser(name, email, password);
+    const user = await createUser(name, email, password);
     return NextResponse.json({ id: user.id, name: user.name, email: user.email }, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Registration failed";

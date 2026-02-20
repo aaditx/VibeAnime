@@ -61,8 +61,14 @@ export default function Navbar() {
   };
 
   const handleRandomAnime = async () => {
-    const randomId = Math.floor(Math.random() * 150000) + 1;
-    router.push(`/anime/${randomId}`);
+    // Curated pool of popular AniList IDs — always valid, never 404
+    const popularIds = [
+      20, 21, 16498, 101922, 21459, 5114, 9253, 1535, 11757, 11061,
+      20583, 97940, 154587, 113415, 136430, 121301, 1, 6702, 918, 2904,
+      19, 269, 35760, 38524, 237, 31964, 22319, 105333, 98659, 131681,
+    ];
+    const id = popularIds[Math.floor(Math.random() * popularIds.length)];
+    router.push(`/anime/${id}`);
   };
 
   const navLinks = [

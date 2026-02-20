@@ -56,21 +56,35 @@ export async function GET(req: NextRequest) {
       const base = new URL(".", targetUrl).toString();
       const appBase = req.nextUrl.origin;
 
+      /**
+       * Rewrites a URL (absolute or relative) to route through this proxy.
+       */
+      const proxyUrl = (rawSrc: string) => {
+        const abs = rawSrc.startsWith("http://") || rawSrc.startsWith("https://")
+          ? rawSrc
+          : new URL(rawSrc, base).toString();
+        return `${appBase}/api/streaming/proxy?url=${encodeURIComponent(abs)}&referer=${encodeURIComponent(referer)}`;
+      };
+
       const rewritten = text
         .split("\n")
         .map((line) => {
           const trimmed = line.trim();
-          // Skip comments and empty lines
-          if (!trimmed || trimmed.startsWith("#")) return line;
+          if (!trimmed) return line;
 
-          let absoluteUrl: string;
-          if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            absoluteUrl = trimmed;
-          } else {
-            absoluteUrl = new URL(trimmed, base).toString();
+          // Plain segment URI (not a tag line)
+          if (!trimmed.startsWith("#")) {
+            return proxyUrl(trimmed);
           }
 
-          return `${appBase}/api/streaming/proxy?url=${encodeURIComponent(absoluteUrl)}&referer=${encodeURIComponent(referer)}`;
+          // #EXT-X-MAP:URI="..." — initialization segment must be proxied
+          // #EXT-X-KEY:URI="..." — AES-128 key fetch must be proxied
+          if (trimmed.startsWith("#EXT-X-MAP:") || trimmed.startsWith("#EXT-X-KEY:")) {
+            return line.replace(/URI="([^"]+)"/, (_, uri) => `URI="${proxyUrl(uri)}"`);
+          }
+
+          // All other tag/comment lines pass through unchanged
+          return line;
         })
         .join("\n");
 

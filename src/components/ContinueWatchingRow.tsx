@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, X, RotateCcw } from "lucide-react";
 import { useContinueWatchingStore } from "@/store/useContinueWatchingStore";
-import { getAnimeTitle } from "@/lib/utils";
 
 export default function ContinueWatchingRow() {
   const { items, removeProgress } = useContinueWatchingStore();

@@ -14,10 +14,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password as string;
         if (!email || !password) return null;
 
-        const user = getUserByEmail(email);
+        const user = await getUserByEmail(email);
         if (!user) return null;
 
-        const valid = verifyPassword(password, user.passwordHash);
+        const valid = await verifyPassword(password, user.passwordHash);
         if (!valid) return null;
 
         return { id: user.id, name: user.name, email: user.email };

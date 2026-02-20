@@ -1,14 +1,33 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Compress responses with gzip/brotli
+  compress: true,
+
+  // Keep graphql-request as a server-side external (it's ESM-only in v7+)
+  serverExternalPackages: ["graphql-request"],
+
   images: {
+    // Serve modern formats (AVIF first, then WebP)
+    formats: ["image/avif", "image/webp"],
+    // Cache aggressively — anime cover art rarely changes
+    minimumCacheTTL: 86400, // 24 hours
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "img.anili.st" },
       { protocol: "https", hostname: "media.kitsu.io" },
       { protocol: "https", hostname: "i.imgur.com" },
+      { protocol: "https", hostname: "gogocdn.net" },
+      { protocol: "https", hostname: "cdn.noitatnemucod.net" },
     ],
+    // Sizes matched to AnimeCard widths (sm: 144px, md: 176px, lg: 240px)
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 64, 96, 144, 176, 256],
   },
+
+  // Reduce source map size in dev for faster HMR
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;
+

@@ -97,7 +97,7 @@ export default function HeroSection({ animes }: HeroSectionProps) {
               <h1
                 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-none uppercase"
                 style={{
-                  fontFamily: "'Bebas Neue', 'Space Grotesk', sans-serif",
+                  fontFamily: "var(--font-bebas), 'Space Grotesk', sans-serif",
                   letterSpacing: "0.04em",
                   textShadow: "0 2px 20px rgba(0,0,0,0.8)",
                   opacity: animating ? 0 : 1,
@@ -170,6 +170,7 @@ export default function HeroSection({ animes }: HeroSectionProps) {
                 alt={title}
                 width={208}
                 height={294}
+                priority={current === 0}
                 className="w-full h-auto object-cover"
                 style={{ aspectRatio: "2/3", opacity: animating ? 0.4 : 1, transition: "opacity 0.4s" }}
               />
