@@ -14,7 +14,7 @@ const bebasNeue = Bebas_Neue({
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-space",
   display: "swap",
 });
