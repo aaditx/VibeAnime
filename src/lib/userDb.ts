@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import clientPromise from "@/lib/mongodb";
+import { getMongoClient } from "@/lib/mongodb";
 
 const DB_NAME = "vibeanime";
 const COLLECTION = "users";
@@ -13,7 +13,7 @@ export interface User {
 }
 
 async function getCollection() {
-  const client = await clientPromise;
+  const client = await getMongoClient();
   return client.db(DB_NAME).collection<User>(COLLECTION);
 }
 
