@@ -140,3 +140,97 @@ export async function updateUserPassword(email: string, newPassword: string): Pr
   );
 }
 
+// ─── Watch Progress ───────────────────────────────────────────────────────────
+
+export interface WatchProgressEntry {
+  animeId: number;
+  animeTitle: string;
+  coverImage: string;
+  coverColor: string | null;
+  episode: number;
+  totalEpisodes: number | null;
+  updatedAt: string;
+}
+
+async function getProgressCollection() {
+  const client = await getMongoClient();
+  const col = client.db(DB_NAME).collection<WatchProgressEntry & { userId: string }>("watchProgress");
+  await col.createIndex({ userId: 1, animeId: 1 }, { unique: true });
+  return col;
+}
+
+export async function getWatchProgress(userId: string): Promise<WatchProgressEntry[]> {
+  const col = await getProgressCollection();
+  return col
+    .find({ userId }, { projection: { _id: 0, userId: 0 } })
+    .sort({ updatedAt: -1 })
+    .limit(50)
+    .toArray();
+}
+
+export async function upsertWatchProgress(userId: string, entry: WatchProgressEntry): Promise<void> {
+  const col = await getProgressCollection();
+  await col.updateOne(
+    { userId, animeId: entry.animeId },
+    { $set: { ...entry, userId } },
+    { upsert: true }
+  );
+}
+
+export async function deleteWatchProgress(userId: string, animeId: number): Promise<void> {
+  const col = await getProgressCollection();
+  await col.deleteOne({ userId, animeId });
+}
+
+export async function clearWatchProgress(userId: string): Promise<void> {
+  const col = await getProgressCollection();
+  await col.deleteMany({ userId });
+}
+
+// ─── Watchlist ────────────────────────────────────────────────────────────────
+
+export interface WatchlistEntry {
+  id: number;
+  title: string;
+  coverImage: string;
+  episodes: number | null;
+  status: string;
+  averageScore: number | null;
+  genres: string[];
+  addedAt: string;
+}
+
+async function getWatchlistCollection() {
+  const client = await getMongoClient();
+  const col = client.db(DB_NAME).collection<WatchlistEntry & { userId: string }>("watchlist");
+  await col.createIndex({ userId: 1, id: 1 }, { unique: true });
+  return col;
+}
+
+export async function getWatchlist(userId: string): Promise<WatchlistEntry[]> {
+  const col = await getWatchlistCollection();
+  return col
+    .find({ userId }, { projection: { _id: 0, userId: 0 } })
+    .sort({ addedAt: -1 })
+    .toArray();
+}
+
+export async function upsertWatchlistItem(userId: string, item: WatchlistEntry): Promise<void> {
+  const col = await getWatchlistCollection();
+  await col.updateOne(
+    { userId, id: item.id },
+    { $set: { ...item, userId } },
+    { upsert: true }
+  );
+}
+
+export async function removeWatchlistItem(userId: string, itemId: number): Promise<void> {
+  const col = await getWatchlistCollection();
+  await col.deleteOne({ userId, id: itemId });
+}
+
+export async function clearWatchlist(userId: string): Promise<void> {
+  const col = await getWatchlistCollection();
+  await col.deleteMany({ userId });
+}
+

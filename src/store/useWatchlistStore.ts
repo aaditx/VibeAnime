@@ -21,6 +21,8 @@ interface WatchlistStore {
   removeFromWatchlist: (id: number) => void;
   isInWatchlist: (id: number) => boolean;
   clearWatchlist: () => void;
+  /** Populate store from DB without triggering API writes */
+  hydrateFromDb: (items: WatchlistItem[]) => void;
 }
 
 export const useWatchlistStore = create<WatchlistStore>()(
@@ -39,15 +41,18 @@ export const useWatchlistStore = create<WatchlistStore>()(
           genres: anime.genres,
           addedAt: new Date().toISOString(),
         };
-        set((state) => ({
-          items: state.items.some((i) => i.id === anime.id)
-            ? state.items
-            : [item, ...state.items],
-        }));
+        if (get().items.some((i) => i.id === anime.id)) return;
+        set((state) => ({ items: [item, ...state.items] }));
+        fetch("/api/user/watchlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item),
+        }).catch(() => {});
       },
 
       removeFromWatchlist: (id: number) => {
         set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
+        fetch(`/api/user/watchlist/${id}`, { method: "DELETE" }).catch(() => {});
       },
 
       isInWatchlist: (id: number) => {
@@ -55,6 +60,8 @@ export const useWatchlistStore = create<WatchlistStore>()(
       },
 
       clearWatchlist: () => set({ items: [] }),
+
+      hydrateFromDb: (items) => set({ items }),
     }),
     {
       name: "vibeanime-watchlist",

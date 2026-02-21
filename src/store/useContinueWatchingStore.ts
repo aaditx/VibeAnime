@@ -19,6 +19,16 @@ interface ContinueWatchingStore {
   getProgress: (animeId: number) => WatchProgress | undefined;
   removeProgress: (animeId: number) => void;
   clearAll: () => void;
+  /** Populate store from DB without triggering API writes */
+  hydrateFromDb: (items: WatchProgress[]) => void;
+}
+
+function syncProgress(entry: Omit<WatchProgress, "updatedAt"> & { updatedAt?: string }) {
+  fetch("/api/user/progress", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry),
+  }).catch(() => {});
 }
 
 export const useContinueWatchingStore = create<ContinueWatchingStore>()(
@@ -27,9 +37,9 @@ export const useContinueWatchingStore = create<ContinueWatchingStore>()(
       items: [],
 
       setProgress: (progress) => {
+        const item: WatchProgress = { ...progress, updatedAt: new Date().toISOString() };
         set((state) => {
           const existing = state.items.findIndex((i) => i.animeId === progress.animeId);
-          const item: WatchProgress = { ...progress, updatedAt: new Date().toISOString() };
           if (existing >= 0) {
             const updated = [...state.items];
             updated[existing] = item;
@@ -37,14 +47,19 @@ export const useContinueWatchingStore = create<ContinueWatchingStore>()(
           }
           return { items: [item, ...state.items].slice(0, 20) };
         });
+        syncProgress(item);
       },
 
       getProgress: (animeId) => get().items.find((i) => i.animeId === animeId),
 
-      removeProgress: (animeId) =>
-        set((state) => ({ items: state.items.filter((i) => i.animeId !== animeId) })),
+      removeProgress: (animeId) => {
+        set((state) => ({ items: state.items.filter((i) => i.animeId !== animeId) }));
+        fetch(`/api/user/progress/${animeId}`, { method: "DELETE" }).catch(() => {});
+      },
 
       clearAll: () => set({ items: [] }),
+
+      hydrateFromDb: (items) => set({ items }),
     }),
     { name: "vibeanime-watch-progress" }
   )
