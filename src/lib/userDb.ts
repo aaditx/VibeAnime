@@ -89,3 +89,54 @@ export async function verifyPassword(
   return bcrypt.compare(password, hash);
 }
 
+// ─── Password reset tokens ────────────────────────────────────────────────────
+
+interface ResetToken {
+  token: string;
+  email: string;
+  expiresAt: Date;
+}
+
+async function getTokenCollection() {
+  const client = await getMongoClient();
+  const col = client.db(DB_NAME).collection<ResetToken>("resetTokens");
+  // Auto-delete expired tokens
+  await col.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+  return col;
+}
+
+export async function createPasswordResetToken(email: string): Promise<string | null> {
+  const users = await getUserByEmail(email);
+  if (!users) return null; // don't reveal if email exists
+
+  const col = await getTokenCollection();
+  // Remove any existing token for this email
+  await col.deleteMany({ email: email.toLowerCase() });
+
+  const token = crypto.randomUUID();
+  await col.insertOne({
+    token,
+    email: email.toLowerCase(),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+  });
+  return token;
+}
+
+export async function verifyAndConsumeResetToken(token: string): Promise<string | null> {
+  const col = await getTokenCollection();
+  const record = await col.findOneAndDelete({
+    token,
+    expiresAt: { $gt: new Date() },
+  });
+  return record?.email ?? null;
+}
+
+export async function updateUserPassword(email: string, newPassword: string): Promise<void> {
+  const col = await getCollection();
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await col.updateOne(
+    { email: email.toLowerCase() },
+    { $set: { passwordHash } }
+  );
+}
+
