@@ -3,7 +3,7 @@ import { createPasswordResetToken } from "@/lib/userDb";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibe-anime.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app";
 
 export async function POST(req: NextRequest) {
   try {

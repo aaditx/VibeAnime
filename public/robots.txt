@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /auth/
 
-Sitemap: https://vibeanime.vercel.app/sitemap.xml
+Sitemap: https://vibeanime.app/sitemap.xml

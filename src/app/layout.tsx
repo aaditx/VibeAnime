@@ -20,7 +20,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.vercel.app"),
+metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app"),
   title: {
     default: "VibeAnime - Stream Anime Online",
     template: "%s | VibeAnime",
