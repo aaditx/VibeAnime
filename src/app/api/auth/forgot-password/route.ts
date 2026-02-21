@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const resetUrl = `${BASE_URL}/auth/reset-password?token=${token}`;
 
     await resend.emails.send({
-      from: "VibeAnime <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM ?? "VibeAnime <onboarding@resend.dev>",
       to: email,
       subject: "Reset your VibeAnime password",
       html: `
