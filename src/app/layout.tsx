@@ -20,7 +20,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app"),
   title: {
     default: "VibeAnime - Stream Anime Online",
     template: "%s | VibeAnime",
@@ -40,6 +40,9 @@ metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app
     description: "Watch trending and popular anime for free.",
   },
   robots: { index: true, follow: true },
+  verification: {
+    google: "googled78fde7e807d9a9a",
+  },
 };
 
 export const viewport: Viewport = {
