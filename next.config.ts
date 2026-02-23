@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   compress: true,
 
   // Keep ESM-only / native packages as server-side externals
-  serverExternalPackages: ["graphql-request", "mongodb"],
+  serverExternalPackages: ["graphql-request", "mongodb", "aniwatch"],
 
   images: {
     // Serve modern formats (AVIF first, then WebP)

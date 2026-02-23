@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Play, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AnimeEpisode } from "@/lib/streaming";
@@ -89,22 +88,10 @@ export default function EpisodeList({ animeId, totalEpisodes, currentEpisode, ep
                     : "hover:bg-[#1a1a1a] border border-transparent"
                 )}
               >
-                {/* Thumbnail */}
-                {epData?.image ? (
-                  <div className="relative w-14 h-9 flex-none overflow-hidden rounded">
-                    <Image
-                      src={epData.image}
-                      alt={`Episode ${ep}`}
-                      fill
-                      className="object-cover"
-                      sizes="56px"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-14 h-9 bg-[#1a1a1a] border border-[#222] flex-none flex items-center justify-center text-[#555] text-xs font-black">
-                    {ep}
-                  </div>
-                )}
+                {/* Episode number box */}
+                <div className="w-14 h-9 bg-[#1a1a1a] border border-[#222] flex-none flex items-center justify-center text-[#555] text-xs font-black">
+                  {ep}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className={cn("text-xs font-bold truncate", isCurrent ? "text-[#e8002d]" : "text-white/80")}>
                     {epData?.title ?? `Episode ${ep}`}

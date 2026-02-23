@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
   const rawUrl = req.nextUrl.searchParams.get("url");
-  const referer = req.nextUrl.searchParams.get("referer") ?? "https://gogoanime.tel/";
+  const referer = req.nextUrl.searchParams.get("referer") ?? "https://hianime.to/";
 
   if (!rawUrl) {
     return new NextResponse("Missing url parameter", { status: 400 });
