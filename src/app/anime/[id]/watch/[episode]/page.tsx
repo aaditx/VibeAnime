@@ -1,5 +1,6 @@
 ﻿import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, ArrowLeft, Tv } from "lucide-react";
 import { getAnimeDetail } from "@/lib/anilist";
 import { getAnimeTitle, stripHtml } from "@/lib/utils";
@@ -62,12 +63,31 @@ export default async function WatchPage({ params }: Props) {
 
   return (
     <div className="min-h-screen pt-14 bg-[#0a0a0a]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Back & Navigation */}
-        <div className="flex items-center justify-between mb-4 gap-2">
+
+      {/* ── Cinematic banner strip ── */}
+      <div className="relative w-full overflow-hidden" style={{ height: "72px" }}>
+        {anime.bannerImage ? (
+          <>
+            <Image
+              src={anime.bannerImage}
+              alt=""
+              fill
+              className="object-cover object-top"
+              style={{ opacity: 0.22 }}
+              sizes="100vw"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/75 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-[#0d0d0d]" />
+        )}
+        {/* Back & Navigation overlaid on banner */}
+        <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-2">
           <Link
             href={`/anime/${animeId}`}
-            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#555] hover:text-white transition-colors min-w-0"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#888] hover:text-white transition-colors min-w-0"
           >
             <ArrowLeft className="w-4 h-4 flex-none" />
             <span className="truncate hidden sm:block">Back to {title}</span>
@@ -92,7 +112,10 @@ export default async function WatchPage({ params }: Props) {
             )}
           </div>
         </div>
+      </div>
 
+      {/* ── Main content ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Player -- main column */}
           <div className="lg:col-span-2 space-y-4">
@@ -117,11 +140,10 @@ export default async function WatchPage({ params }: Props) {
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${
-                      hianimeEpisodeId
+                    <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${hianimeEpisodeId
                         ? "border-[#e8002d]/30 text-[#e8002d] bg-[#e8002d]/5"
                         : "border-[#333] text-[#555]"
-                    }`}>
+                      }`}>
                       <span className={`w-1.5 h-1.5 ${hianimeEpisodeId ? "bg-[#e8002d]" : "bg-[#555]"}`} />
                       {hianimeEpisodeId ? "Streaming available" : "Indexing episode..."}
                     </span>

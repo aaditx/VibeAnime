@@ -88,15 +88,22 @@ export default function EpisodeList({ animeId, totalEpisodes, currentEpisode, ep
                     : "hover:bg-[#1a1a1a] border border-transparent"
                 )}
               >
-                {/* Episode number box */}
-                <div className="w-14 h-9 bg-[#1a1a1a] border border-[#222] flex-none flex items-center justify-center text-[#555] text-xs font-black">
+                {/* Episode number box — highlighted when current */}
+                <div className={cn(
+                  "w-12 h-9 flex-none flex items-center justify-center text-xs font-black border transition-colors",
+                  isCurrent
+                    ? "bg-[#e8002d] border-[#e8002d] text-white"
+                    : "bg-[#1a1a1a] border-[#222] text-[#555]"
+                )}>
                   {ep}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={cn("text-xs font-bold truncate", isCurrent ? "text-[#e8002d]" : "text-white/80")}>
+                  <p className={cn("text-xs font-bold truncate leading-snug", isCurrent ? "text-[#e8002d]" : "text-white/80")}>
                     {epData?.title ?? `Episode ${ep}`}
                   </p>
-                  <p className="text-[10px] text-[#8888aa]">EP {ep}</p>
+                  {epData?.isFiller && (
+                    <span className="text-[9px] text-amber-500/70 font-bold uppercase tracking-wide">Filler</span>
+                  )}
                 </div>
                 {isCurrent && <Play className="w-3.5 h-3.5 text-[#e8002d] fill-[#e8002d] flex-none" />}
               </Link>
