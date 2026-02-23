@@ -20,19 +20,59 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+const BASE = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app";
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   try {
     const anime = await getAnimeDetail(Number(id));
     const title = getAnimeTitle(anime.title);
+    const description =
+      stripHtml(anime.description)?.slice(0, 155) ??
+      `Watch ${title} online for free on VibeAnime.`;
+    const studios =
+      anime.studios?.edges.filter((e) => e.isMain).map((e) => e.node.name) ?? [];
+    const ogImage = anime.coverImage.extraLarge ?? anime.coverImage.large;
+    const canonical = `${BASE}/anime/${id}`;
+    const keywords = [
+      title,
+      anime.title.romaji,
+      anime.title.english,
+      ...anime.genres,
+      ...studios,
+      "watch anime",
+      "anime online",
+      "free anime",
+      "VibeAnime",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     return {
-      title: `${title} - VibeAnime`,
-      description: stripHtml(anime.description)?.slice(0, 160),
+      title: `Watch ${title} Online Free`,
+      description,
+      keywords,
+      alternates: { canonical },
+      openGraph: {
+        type: "video.tv_show",
+        url: canonical,
+        title: `${title} | VibeAnime`,
+        description,
+        images: ogImage ? [{ url: ogImage, width: 460, height: 650, alt: title }] : [],
+        siteName: "VibeAnime",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${title} | VibeAnime`,
+        description,
+        images: ogImage ? [ogImage] : [],
+      },
     };
   } catch {
-    return { title: "Anime - VibeAnime" };
+    return { title: "Anime | VibeAnime" };
   }
 }
+
 
 export default async function AnimeDetailPage({ params }: Props) {
   const { id } = await params;
@@ -58,8 +98,39 @@ export default async function AnimeDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen pt-14">
+      {/* JSON-LD structured data — TVSeries for Google rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "TVSeries",
+            name: title,
+            alternateName: anime.title.romaji ?? undefined,
+            description: description || undefined,
+            image: anime.coverImage.extraLarge ?? anime.coverImage.large,
+            url: `${BASE}/anime/${animeId}`,
+            genre: anime.genres,
+            numberOfEpisodes: anime.episodes ?? undefined,
+            aggregateRating: anime.averageScore
+              ? {
+                "@type": "AggregateRating",
+                ratingValue: (anime.averageScore / 10).toFixed(1),
+                bestRating: "10",
+                ratingCount: anime.popularity ?? 1,
+              }
+              : undefined,
+            potentialAction: {
+              "@type": "WatchAction",
+              target: `${BASE}/anime/${animeId}/watch/1`,
+            },
+          }),
+        }}
+      />
+
       {/* Banner */}
       <div className="relative h-56 sm:h-72 w-full overflow-hidden">
+
         {anime.bannerImage ? (
           <Image
             src={anime.bannerImage}
@@ -96,11 +167,10 @@ export default async function AnimeDetailPage({ params }: Props) {
                 {formatFormat(anime.format)}
               </span>
               <span
-                className={`text-[9px] font-black px-2 py-1 border uppercase tracking-widest ${
-                  anime.status === "RELEASING"
-                    ? "border-[#e8002d]/50 text-[#e8002d] bg-[#e8002d]/10"
-                    : "border-[#222] text-[#555]"
-                }`}
+                className={`text-[9px] font-black px-2 py-1 border uppercase tracking-widest ${anime.status === "RELEASING"
+                  ? "border-[#e8002d]/50 text-[#e8002d] bg-[#e8002d]/10"
+                  : "border-[#222] text-[#555]"
+                  }`}
               >
                 {formatStatus(anime.status)}
               </span>

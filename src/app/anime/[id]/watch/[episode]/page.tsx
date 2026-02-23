@@ -14,16 +14,41 @@ interface Props {
   params: Promise<{ id: string; episode: string }>;
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app";
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, episode } = await params;
   try {
     const anime = await getAnimeDetail(Number(id));
     const title = getAnimeTitle(anime.title);
-    return { title: `${title} - Episode ${episode} | VibeAnime` };
+    const description = `Watch ${title} Episode ${episode} online free on VibeAnime. ${stripHtml(anime.description)?.slice(0, 100) ?? ""
+      }`;
+    const ogImage = anime.coverImage.extraLarge ?? anime.coverImage.large;
+    const canonical = `${BASE_URL}/anime/${id}/watch/${episode}`;
+    return {
+      title: `${title} Episode ${episode}`,
+      description,
+      alternates: { canonical },
+      openGraph: {
+        type: "video.episode",
+        url: canonical,
+        title: `${title} Episode ${episode} | VibeAnime`,
+        description,
+        images: ogImage ? [{ url: ogImage, alt: title }] : [],
+        siteName: "VibeAnime",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${title} Episode ${episode} | VibeAnime`,
+        description,
+        images: ogImage ? [ogImage] : [],
+      },
+    };
   } catch {
-    return { title: "Watch - VibeAnime" };
+    return { title: "Watch | VibeAnime" };
   }
 }
+
 
 export default async function WatchPage({ params }: Props) {
   const { id, episode } = await params;
@@ -141,8 +166,8 @@ export default async function WatchPage({ params }: Props) {
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${hianimeEpisodeId
-                        ? "border-[#e8002d]/30 text-[#e8002d] bg-[#e8002d]/5"
-                        : "border-[#333] text-[#555]"
+                      ? "border-[#e8002d]/30 text-[#e8002d] bg-[#e8002d]/5"
+                      : "border-[#333] text-[#555]"
                       }`}>
                       <span className={`w-1.5 h-1.5 ${hianimeEpisodeId ? "bg-[#e8002d]" : "bg-[#555]"}`} />
                       {hianimeEpisodeId ? "Streaming available" : "Indexing episode..."}
