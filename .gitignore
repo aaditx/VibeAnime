@@ -46,3 +46,6 @@ next-env.d.ts
 
 # temp folders
 /temp-vibeanime
+
+# download site (separate project, not part of main repo)
+/download-site

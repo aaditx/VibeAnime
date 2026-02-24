@@ -6,6 +6,9 @@ import Hls from "hls.js";
 import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
+// const DOWNLOADER_URL =
+//   process.env.NEXT_PUBLIC_DOWNLOADER_URL ?? "http://localhost:3001";
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface VideoPlayerProps {
@@ -219,6 +222,10 @@ export default function VideoPlayer({
   }, [showAutoNext, nextEpUrl, router]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── [Download feature — paused] ────────────────────────────────────────────
+  // Uncomment when download-site is ready to ship:
+  // const handleDownload = useCallback(() => { ... }, [...]);
+
   const handleFullscreen = useCallback(() => {
     videoRef.current?.requestFullscreen();
   }, []);
@@ -269,11 +276,7 @@ export default function VideoPlayer({
         {useFallback && !hlsError && (
           <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 border border-amber-500/30 px-2 py-0.5">Embed</span>
         )}
-        {hlsError && (
-          <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-400 border border-amber-400/30 px-2 py-0.5">
-            <AlertTriangle className="w-3 h-3" /> Stream error
-          </span>
-        )}
+
         <button onClick={handleReload} title="Reload player" className="text-[#555] hover:text-white p-1 transition-colors">
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
