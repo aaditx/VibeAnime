@@ -12,8 +12,8 @@
 import { HiAnime } from "aniwatch";
 import { unstable_cache } from "next/cache";
 import { scrapeAnikaiSources } from "@/lib/anikaiScraper";
-export { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
+export { extractHiAnimeEpId, buildMegaplayUrl };
 
 // Singleton scraper — in-process HiAnime scraper
 const hianime = new HiAnime.Scraper();
