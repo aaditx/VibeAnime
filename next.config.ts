@@ -27,6 +27,20 @@ const nextConfig: NextConfig = {
 
   // Reduce source map size in dev for faster HMR
   productionBrowserSourceMaps: false,
+
+  // Allow the download site to call our streaming API cross-origin
+  async headers() {
+    return [
+      {
+        source: "/api/streaming/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

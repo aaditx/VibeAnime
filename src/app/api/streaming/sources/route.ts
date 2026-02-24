@@ -4,6 +4,15 @@ import { fetchFallbackIframe } from "@/lib/fallback";
 
 export const dynamic = "force-dynamic";
 
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+};
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
 /**
  * GET /api/streaming/sources
  *
@@ -37,15 +46,12 @@ export async function GET(req: NextRequest) {
       const fallbackIframe = await fetchFallbackIframe(episodeId, server, category);
       return NextResponse.json(
         { ...data, fallbackIframe },
-        { headers: { "Cache-Control": "private, max-age=1800" } }
+        { headers: { ...CORS, "Cache-Control": "private, max-age=1800" } }
       );
     }
 
     return NextResponse.json(data, {
-      headers: {
-        // Short cache: signed URLs expire within a few hours
-        "Cache-Control": "private, max-age=1800",
-      },
+      headers: { ...CORS, "Cache-Control": "private, max-age=1800" },
     });
   } catch (err) {
     console.error("[/api/streaming/sources]", err);
@@ -58,7 +64,7 @@ export async function GET(req: NextRequest) {
       : fallbackIframe ?? "";
     return NextResponse.json(
       { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl },
-      { status: 200 }
+      { status: 200, headers: CORS }
     );
   }
 }

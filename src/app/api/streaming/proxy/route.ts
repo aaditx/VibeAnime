@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 const ALLOWED_HOSTS = new Set([
   "megacloud.tv",
   "s3.megacloud.tv",
+  "megacloud.blog",
   "b-cdn.net",
   "megaplay.buzz",
   "vidmoly.to",
@@ -19,6 +20,7 @@ const ALLOWED_HOSTS = new Set([
   "hianime.sx",
   "aniwatch.to",
   "cache.hianimez.to",
+  "netmagcdn.com",      // HLS CDN observed in production
 ]);
 
 function isAllowedHost(hostname: string): boolean {
