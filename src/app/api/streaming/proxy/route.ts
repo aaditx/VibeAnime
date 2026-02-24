@@ -34,12 +34,17 @@ export async function GET(req: NextRequest) {
         Referer: referer,
         Origin: new URL(referer).origin,
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "cross-site",
       },
     });
 
     if (!upstream.ok) {
+      console.error(`[HLS Proxy] Upstream returned ${upstream.status} for ${targetUrl.toString()}`);
       return new NextResponse(`Upstream error: ${upstream.status}`, { status: upstream.status });
     }
 
