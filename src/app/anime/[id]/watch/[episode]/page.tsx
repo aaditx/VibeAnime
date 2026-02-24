@@ -66,8 +66,8 @@ export default async function WatchPage({ params }: Props) {
 
   const title = getAnimeTitle(anime.title);
 
-  // Fetch HiAnime episodes via search-by-title
-  const { hianimeId, episodes } = await fetchEpisodesForAnime(title).catch(() => ({
+  // Fetch HiAnime episodes via search-by-title and format
+  const { hianimeId, episodes } = await fetchEpisodesForAnime(title, anime.format).catch(() => ({
     hianimeId: null,
     episodes: [],
   }));

@@ -57,20 +57,44 @@ export interface EpisodeSources {
  * Search for an anime by title. Tries in-process scraper first; if it returns
  * no results (e.g. hianime.to blocked locally), falls back to REST API.
  * Cached 24 hours — title ↔ animeId mapping rarely changes.
+ * 
+ * @param title  The anime title to search
+ * @param format The Anilist format (e.g., "TV", "MOVIE", "OVA", "SPECIAL") used to improve matching accuracy.
  */
 export const searchHiAnimeId = unstable_cache(
-  async (title: string): Promise<string | null> => {
+  async (title: string, format: string | null = null): Promise<string | null> => {
+
+    // Map Anilist format to HiAnime Type
+    let hianimeType: string | null = null;
+    if (format === "TV" || format === "TV_SHORT") hianimeType = "TV";
+    else if (format === "MOVIE") hianimeType = "Movie";
+    else if (format === "SPECIAL") hianimeType = "Special";
+    else if (format === "OVA") hianimeType = "OVA";
+    else if (format === "ONA") hianimeType = "ONA";
+
+    // Helper function to pick the best match
+    const pickBestMatch = (animes: { id: string; name: string; type: string }[]) => {
+      if (animes.length === 0) return null;
+      const titleLower = title.toLowerCase();
+      const exact = animes.find((a) => a.name?.toLowerCase() === titleLower);
+      if (exact?.id) return exact.id;
+
+      let formatMatch = null;
+      if (hianimeType) {
+        formatMatch = animes.find((a) => a.type?.toLowerCase() === hianimeType?.toLowerCase());
+        if (formatMatch?.id) return formatMatch.id;
+      }
+
+      const tvMatch = animes.find((a) => a.type === "TV");
+      return (tvMatch ?? animes[0]).id ?? null;
+    };
+
     // ── Primary: in-process scraper ──
     try {
       const result = await hianime.search(title, 1);
       const animes = result.animes ?? [];
-      if (animes.length > 0) {
-        const titleLower = title.toLowerCase();
-        const exact = animes.find((a) => a.name?.toLowerCase() === titleLower);
-        if (exact?.id) return exact.id;
-        const tvMatch = animes.find((a) => a.type === "TV");
-        return (tvMatch ?? animes[0]).id ?? null;
-      }
+      const bestMatch = pickBestMatch(animes as any);
+      if (bestMatch) return bestMatch;
     } catch {
       // scraper blocked or failed — fall through to API
     }
@@ -85,12 +109,8 @@ export const searchHiAnimeId = unstable_cache(
       const json = await res.json();
       const animes: { id: string; name: string; type: string }[] =
         json?.data?.animes ?? [];
-      if (animes.length === 0) return null;
-      const titleLower = title.toLowerCase();
-      const exact = animes.find((a) => a.name?.toLowerCase() === titleLower);
-      if (exact) return exact.id;
-      const tvMatch = animes.find((a) => a.type === "TV");
-      return (tvMatch ?? animes[0]).id ?? null;
+
+      return pickBestMatch(animes);
     } catch {
       return null;
     }
@@ -153,14 +173,15 @@ export const fetchHiAnimeEpisodes = unstable_cache(
 
 export const fetchEpisodesForAnime = unstable_cache(
   async (
-    title: string
+    title: string,
+    format: string | null = null
   ): Promise<{ hianimeId: string | null; episodes: AnimeEpisode[] }> => {
-    const hianimeId = await searchHiAnimeId(title);
+    const hianimeId = await searchHiAnimeId(title, format);
     if (!hianimeId) return { hianimeId: null, episodes: [] };
     const episodes = await fetchHiAnimeEpisodes(hianimeId);
     return { hianimeId, episodes };
   },
-  ["hianime-episodes-for-anime-v2"],
+  ["hianime-episodes-for-anime-v2-with-format"],
   { revalidate: 21600, tags: ["hianime", "episodes"] }
 );
 
