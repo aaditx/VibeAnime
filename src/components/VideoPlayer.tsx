@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
-import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2 } from "lucide-react";
-import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming";
+import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2, AlertTriangle } from "lucide-react";
+import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,7 @@ interface StreamSources {
   sources: { url: string; quality?: string; isM3U8?: boolean }[];
   subtitles: { url: string; lang: string }[];
   headers: Record<string, string>;
+  megaplayUrl?: string;
   fallbackIframe?: string;
 }
 
@@ -46,7 +47,20 @@ export default function VideoPlayer({
   const [streamData, setStreamData] = useState<StreamSources | null>(null);
   const [loading, setLoading] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
+  const [hlsError, setHlsError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // ── Derived guaranteed fallback URL ───────────────────────────────────────
+  // Even if the API never responded, we can build the megaplay URL client-side.
+  const guaranteedFallback = useCallback((): string => {
+    // Prefer what the API returned
+    if (streamData?.fallbackIframe) return streamData.fallbackIframe;
+    if (streamData?.megaplayUrl) return streamData.megaplayUrl;
+    // Build from episode ID directly
+    const epId = hianimeEpisodeId ? extractHiAnimeEpId(hianimeEpisodeId) : null;
+    if (epId) return buildMegaplayUrl(epId, category === "dub");
+    return "";
+  }, [streamData, hianimeEpisodeId, category]);
 
   // ── Source fetching ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -56,6 +70,7 @@ export default function VideoPlayer({
     setLoading(true);
     setStreamData(null);
     setUseFallback(false);
+    setHlsError(false);
 
     const url =
       `/api/streaming/sources` +
@@ -69,7 +84,7 @@ export default function VideoPlayer({
         if (cancelled) return;
         setStreamData(data);
         if (!data.sources || data.sources.length === 0) {
-          // No HLS sources from this server/category — fall back to iframe
+          // No HLS sources — jump straight to iframe
           setUseFallback(true);
         }
       })
@@ -104,7 +119,7 @@ export default function VideoPlayer({
       return;
     }
 
-    // Route through our own proxy to handle Referer + CORS for .ts segments
+    // Route through our proxy for Referer + CORS
     const referer = streamData.headers?.Referer || "https://hianime.to/";
     const proxied =
       `/api/streaming/proxy` +
@@ -117,6 +132,10 @@ export default function VideoPlayer({
         backBufferLength: 90,
         maxBufferLength: 60,
         progressive: false,
+        // Retry aggressively before giving up
+        manifestLoadingMaxRetry: 4,
+        levelLoadingMaxRetry: 4,
+        fragLoadingMaxRetry: 6,
       });
       hlsRef.current = hls;
       hls.loadSource(proxied);
@@ -125,7 +144,11 @@ export default function VideoPlayer({
         video.play().catch(() => {/* autoplay blocked — user must click play */ });
       });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (data.fatal) setUseFallback(true);
+        if (data.fatal) {
+          console.warn("[VideoPlayer] Fatal HLS error, switching to fallback iframe", data);
+          setHlsError(true);
+          setUseFallback(true);
+        }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari — native HLS support
@@ -151,6 +174,7 @@ export default function VideoPlayer({
 
   const handleReload = useCallback(() => {
     setUseFallback(false);
+    setHlsError(false);
     setStreamData(null);
     setReloadKey((k) => k + 1);
   }, []);
@@ -171,9 +195,9 @@ export default function VideoPlayer({
     [category]
   );
 
-  // ── Fallback iframe ────────────────────────────────────────────────────────
-  const fallbackUrl = streamData?.fallbackIframe || null;
+  // ── Computed render state ─────────────────────────────────────────────────
   const hasSource = !!hianimeEpisodeId;
+  const iframeUrl = useFallback ? guaranteedFallback() : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -220,10 +244,15 @@ export default function VideoPlayer({
 
         <div className="flex-1" />
 
-        {/* Fallback badge */}
-        {useFallback && (
+        {/* Status badge */}
+        {useFallback && !hlsError && (
           <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 border border-amber-500/30 px-2 py-0.5">
-            Fallback
+            Embed
+          </span>
+        )}
+        {hlsError && (
+          <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-400 border border-amber-400/30 px-2 py-0.5">
+            <AlertTriangle className="w-3 h-3" /> Stream error
           </span>
         )}
 
@@ -245,7 +274,7 @@ export default function VideoPlayer({
 
       {/* ── Player area ── */}
       <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-        {/* No episode ID at all — indexing placeholder */}
+        {/* No episode ID — indexing placeholder */}
         {!hasSource && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d0f]"
@@ -284,12 +313,12 @@ export default function VideoPlayer({
           </div>
         )}
 
-        {/* Fallback iframe (megaplay.buzz) */}
-        {hasSource && !loading && useFallback && fallbackUrl && (
+        {/* Fallback / embed iframe */}
+        {hasSource && !loading && useFallback && iframeUrl && (
           <iframe
             id="vibe-player-iframe"
             key={`fb-${category}-${server}-${episodeNumber}-${reloadKey}`}
-            src={fallbackUrl}
+            src={iframeUrl}
             title={`${animeTitle} Episode ${episodeNumber}`}
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowFullScreen
@@ -309,7 +338,7 @@ export default function VideoPlayer({
             crossOrigin="anonymous"
           >
             {streamData?.subtitles
-              ?.filter((s) => !s.url.includes("thumbnails"))
+              ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
               .map((sub) => (
                 <track
                   key={sub.url}
@@ -329,9 +358,11 @@ export default function VideoPlayer({
           {animeTitle} — Episode {episodeNumber}
         </span>
         <span className="flex-none ml-4 text-[#555566]">
-          {useFallback
-            ? "Fallback active — switch server if video fails"
-            : "Switch server if buffering"}
+          {hlsError
+            ? "HLS failed — playing embed. Try another server."
+            : useFallback
+              ? "Embed mode — switch server if video fails"
+              : "Switch server if buffering"}
         </span>
       </div>
     </div>

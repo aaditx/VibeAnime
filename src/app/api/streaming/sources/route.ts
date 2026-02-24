@@ -13,7 +13,9 @@ export const dynamic = "force-dynamic";
  *   category   — "sub" (default) | "dub" | "raw"
  *
  * Returns:
- *   { sources: [{ url, quality, isM3U8 }], subtitles: [{ url, lang }], headers, fallbackIframe?: string }
+ *   { sources, subtitles, headers, megaplayUrl, fallbackIframe? }
+ *
+ * `megaplayUrl` is always present (non-null) — guaranteed fallback.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -28,12 +30,15 @@ export async function GET(req: NextRequest) {
   try {
     const data = await fetchEpisodeSources(episodeId, server, category);
 
-    // If HLS extraction fails or returns nothing, proactively fetch iframe
+    // data.megaplayUrl is always set inside fetchEpisodeSources.
+    // If HLS sources are also empty, additionally attach a freshly-fetched iframe.
     if (!data.sources || data.sources.length === 0) {
-      const fallbackUrl = await fetchFallbackIframe(episodeId, server, category);
-      return NextResponse.json({ ...data, fallbackIframe: fallbackUrl }, {
-        headers: { "Cache-Control": "private, max-age=1800" },
-      });
+      // fetchFallbackIframe now always returns non-null
+      const fallbackIframe = await fetchFallbackIframe(episodeId, server, category);
+      return NextResponse.json(
+        { ...data, fallbackIframe },
+        { headers: { "Cache-Control": "private, max-age=1800" } }
+      );
     }
 
     return NextResponse.json(data, {
@@ -44,10 +49,15 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[/api/streaming/sources]", err);
-    // Even if it throws, try fetching the iframe
-    const fallbackUrl = await fetchFallbackIframe(episodeId, server, category);
+    // Even if everything throws, build an iframe from the ep ID
+    const fallbackIframe = await fetchFallbackIframe(episodeId, server, category).catch(() => null);
+    // Build megaplay URL from the numeric ep ID in episodeId
+    const epNumericId = episodeId.match(/ep=(\d+)/)?.[1];
+    const megaplayUrl = epNumericId
+      ? `https://megaplay.buzz/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`
+      : fallbackIframe ?? "";
     return NextResponse.json(
-      { sources: [], subtitles: [], headers: {}, fallbackIframe: fallbackUrl },
+      { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl },
       { status: 200 }
     );
   }

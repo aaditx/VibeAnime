@@ -1,21 +1,19 @@
 /**
- * Streaming helper library — Self-hosted with fallback
+ * Streaming helper library — Self-hosted with multi-server fallback
  *
- * PRIMARY: Uses the `aniwatch` npm package (HiAnime scraper) directly.
- *   - Zero external dependencies when deployed on a server with access to hianime.to
- *   - Works in production (vibeanime.app / Vercel) out of the box
- *
- * FALLBACK: If the in-process scraper returns empty results (e.g. hianime.to is
- *   blocked by the local ISP in development), automatically falls back to the
- *   public aniwatch-api instance. Override via HIANIME_API_URL env var to point
- *   at your own self-hosted instance.
- *
- * Video → megaplay.buzz / vidwish.live embed wrappers (iframe fallback)
- *       → OR direct HLS via getEpisodeSources (primary)
+ * PRIMARY:   Uses the `aniwatch` npm package (HiAnime scraper) directly.
+ *              Tries hd-1 first, then hd-2 automatically.
+ * SECONDARY: Falls back to the public aniwatch-api REST instance
+ *              (override via HIANIME_API_URL env var for self-hosted).
+ * TERTIARY:  Always surfaces a megaplay.buzz embed URL so the player
+ *              has something to show even when HLS extraction fails entirely.
  */
 
 import { HiAnime } from "aniwatch";
 import { unstable_cache } from "next/cache";
+import { scrapeAnikaiSources } from "@/lib/anikaiScraper";
+export { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
+import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
 // Singleton scraper — in-process HiAnime scraper
 const hianime = new HiAnime.Scraper();
@@ -49,6 +47,8 @@ export interface EpisodeSources {
   sources: EpisodeSource[];
   subtitles: EpisodeSubtitle[];
   headers: Record<string, string>;
+  /** Always non-null — megaplay.buzz embed URL as a guaranteed last resort */
+  megaplayUrl: string;
 }
 
 // ─── HiAnime search ───────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ export interface EpisodeSources {
  * Search for an anime by title. Tries in-process scraper first; if it returns
  * no results (e.g. hianime.to blocked locally), falls back to REST API.
  * Cached 24 hours — title ↔ animeId mapping rarely changes.
- * 
+ *
  * @param title  The anime title to search
  * @param format The Anilist format (e.g., "TV", "MOVIE", "OVA", "SPECIAL") used to improve matching accuracy.
  */
@@ -188,20 +188,14 @@ export const fetchEpisodesForAnime = unstable_cache(
 // ─── Episode sources (HLS) ────────────────────────────────────────────────────
 
 /**
- * Fetch real HLS streaming sources for an episode.
- * Tries in-process scraper first; falls back to REST API.
- * NOT cached — video URLs are signed and expire within hours.
- *
- * @param episodeId  Full HiAnime episode ID, e.g. "one-piece-100?ep=2142"
- * @param server     "hd-1" (VidStreaming) | "hd-2" (VidCloud)
- * @param category   "sub" | "dub" | "raw"
+ * Internal helper: try the aniwatch in-process scraper for a given server/category.
+ * Returns null on failure or empty results.
  */
-export async function fetchEpisodeSources(
+async function tryScraperSources(
   episodeId: string,
-  server: "hd-1" | "hd-2" = "hd-1",
-  category: "sub" | "dub" | "raw" = "sub"
-): Promise<EpisodeSources> {
-  // ── Primary: in-process scraper ──
+  server: "hd-1" | "hd-2",
+  category: "sub" | "dub" | "raw"
+): Promise<Omit<EpisodeSources, "megaplayUrl"> | null> {
   try {
     const result = await hianime.getEpisodeSources(episodeId, server, category);
     const sources = (result.sources ?? []).map((s) => ({
@@ -221,48 +215,116 @@ export async function fetchEpisodeSources(
   } catch {
     // fall through
   }
+  return null;
+}
 
-  // ── Fallback: REST API ──
+/**
+ * Internal helper: try the REST API fallback for a given server/category.
+ * Returns null on failure or empty results.
+ */
+async function tryApiSources(
+  episodeId: string,
+  server: "hd-1" | "hd-2",
+  category: "sub" | "dub" | "raw"
+): Promise<Omit<EpisodeSources, "megaplayUrl"> | null> {
   try {
-    const params = new URLSearchParams({
-      animeEpisodeId: episodeId,
-      server,
-      category,
-    });
+    const params = new URLSearchParams({ animeEpisodeId: episodeId, server, category });
     const res = await fetch(`${HIANIME_API}/api/v2/hianime/episode/sources?${params}`);
-    if (!res.ok) return { sources: [], subtitles: [], headers: {} };
+    if (!res.ok) return null;
     const json = await res.json();
     const data = json?.data ?? {};
-    return {
-      sources: (data.sources ?? []).map((s: { url: string; quality?: string; isM3U8?: boolean }) => ({
-        url: s.url,
-        quality: s.quality,
-        isM3U8: s.isM3U8 ?? s.url.includes(".m3u8"),
-      })),
-      subtitles: (data.subtitles ?? [])
-        .filter((s: { lang: string }) => s.lang !== "Thumbnails")
-        .map((s: { url: string; lang: string }) => ({ url: s.url, lang: s.lang })),
-      headers: (data.headers as Record<string, string>) ?? {},
-    };
+    const sources = (data.sources ?? []).map((s: { url: string; quality?: string; isM3U8?: boolean }) => ({
+      url: s.url,
+      quality: s.quality,
+      isM3U8: s.isM3U8 ?? s.url.includes(".m3u8"),
+    }));
+    if (sources.length > 0) {
+      return {
+        sources,
+        subtitles: (data.subtitles ?? [])
+          .filter((s: { lang: string }) => s.lang !== "Thumbnails")
+          .map((s: { url: string; lang: string }) => ({ url: s.url, lang: s.lang })),
+        headers: (data.headers as Record<string, string>) ?? {},
+      };
+    }
   } catch {
-    return { sources: [], subtitles: [], headers: {} };
+    // fall through
   }
-}
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-/**
- * Extracts the numeric episode ID from a HiAnime episode ID string.
- * e.g. "one-piece-100?ep=2142" → "2142"
- */
-export function extractHiAnimeEpId(hianimeEpisodeId: string): string | null {
-  const match = hianimeEpisodeId.match(/ep=(\d+)/);
-  return match ? match[1] : null;
+  return null;
 }
 
 /**
- * Build a megaplay.buzz embed URL — fallback iframe when HLS is unavailable.
+ * Fetch real HLS streaming sources for an episode.
+ *
+ * Resolution order for hd-1 / hd-2:
+ *   1. In-process scraper, hd-1
+ *   2. In-process scraper, hd-2
+ *   3. REST API, hd-1
+ *   4. REST API, hd-2
+ *   5. Guaranteed megaplay.buzz iframe URL (always set)
+ *
+ * NOT cached — video URLs are signed and expire within hours.
+ *
+ * @param episodeId  Full HiAnime episode ID, e.g. "one-piece-100?ep=2142"
+ * @param server     "hd-1" (VidStreaming) | "hd-2" (VidCloud) | "anikai-1" | "anikai-2"
+ * @param category   "sub" | "dub" | "raw"
  */
-export function buildMegaplayUrl(epId: string, isDub = false): string {
-  return `https://megaplay.buzz/stream/s-2/${epId}/${isDub ? "dub" : "sub"}`;
+export async function fetchEpisodeSources(
+  episodeId: string,
+  server: "hd-1" | "hd-2" | "anikai-1" | "anikai-2" = "hd-1",
+  category: "sub" | "dub" | "raw" = "sub"
+): Promise<EpisodeSources> {
+  // Build the guaranteed megaplay fallback URL from the numeric ep ID
+  const epNumericId = extractHiAnimeEpId(episodeId);
+  const megaplayUrl = epNumericId
+    ? buildMegaplayUrl(epNumericId, category === "dub")
+    : buildMegaplayUrl("0", false); // non-null placeholder
+
+  // ── AnimeKai servers ──
+  if (server === "anikai-1" || server === "anikai-2") {
+    const [slug, epParam] = episodeId.split("?");
+    let epNum = "1";
+    if (epParam && epParam.startsWith("ep=")) epNum = epParam.replace("ep=", "");
+    const anikaiUrl = `https://anikai.to/watch/${slug}#ep=${epNum}`;
+    try {
+      const urls = await scrapeAnikaiSources(anikaiUrl);
+      if (urls.length > 0) {
+        return {
+          sources: urls.map((url) => ({ url, isM3U8: url.includes(".m3u8") })),
+          subtitles: [],
+          headers: {},
+          megaplayUrl,
+        };
+      }
+    } catch {
+      // fall through to megaplay
+    }
+    return { sources: [], subtitles: [], headers: {}, megaplayUrl };
+  }
+
+  // ── Primary server requested by caller ──
+  const primaryServer: "hd-1" | "hd-2" = server === "hd-2" ? "hd-2" : "hd-1";
+  const secondaryServer: "hd-1" | "hd-2" = primaryServer === "hd-1" ? "hd-2" : "hd-1";
+
+  // 1. Try in-process scraper — primary server
+  const scraperPrimary = await tryScraperSources(episodeId, primaryServer, category);
+  if (scraperPrimary) return { ...scraperPrimary, megaplayUrl };
+
+  // 2. Try in-process scraper — secondary server (automatic cascade)
+  const scraperSecondary = await tryScraperSources(episodeId, secondaryServer, category);
+  if (scraperSecondary) return { ...scraperSecondary, megaplayUrl };
+
+  // 3. Try REST API — primary server
+  const apiPrimary = await tryApiSources(episodeId, primaryServer, category);
+  if (apiPrimary) return { ...apiPrimary, megaplayUrl };
+
+  // 4. Try REST API — secondary server
+  const apiSecondary = await tryApiSources(episodeId, secondaryServer, category);
+  if (apiSecondary) return { ...apiSecondary, megaplayUrl };
+
+  // 5. All HLS paths failed — return empty sources but valid megaplay URL
+  console.warn(`[streaming] All HLS sources failed for ${episodeId} (${server}/${category}). Using megaplay fallback.`);
+  return { sources: [], subtitles: [], headers: {}, megaplayUrl };
 }
+
+// Pure utilities are exported from @/lib/streaming-utils (client-safe, no Node deps)
