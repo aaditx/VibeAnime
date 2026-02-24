@@ -6,6 +6,7 @@ import { getAnimeDetail } from "@/lib/anilist";
 import { getAnimeTitle, stripHtml } from "@/lib/utils";
 import { fetchEpisodesForAnime } from "@/lib/streaming";
 import VideoPlayer from "@/components/VideoPlayer";
+import VideoPlayerErrorBoundary from "@/components/VideoPlayerErrorBoundary";
 import EpisodeList from "@/components/EpisodeList";
 import WatchTracker from "@/components/WatchTracker";
 import type { Metadata } from "next";
@@ -144,12 +145,16 @@ export default async function WatchPage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Player -- main column */}
           <div className="lg:col-span-2 space-y-4">
-            <VideoPlayer
-              hianimeEpisodeId={hianimeEpisodeId}
-              episodeNumber={episodeNum}
-              animeTitle={title}
-              coverImage={anime.coverImage.extraLarge ?? anime.coverImage.large}
-            />
+            <VideoPlayerErrorBoundary>
+              <VideoPlayer
+                hianimeEpisodeId={hianimeEpisodeId}
+                episodeNumber={episodeNum}
+                animeTitle={title}
+                coverImage={anime.coverImage.extraLarge ?? anime.coverImage.large}
+                animeId={animeId}
+                totalEpisodes={totalEpisodes}
+              />
+            </VideoPlayerErrorBoundary>
 
             <div className="bg-[#111] border border-[#1e1e1e] p-4">
               <div className="flex items-start justify-between gap-4">
