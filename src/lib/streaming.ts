@@ -280,25 +280,8 @@ export async function fetchEpisodeSources(
     ? buildMegaplayUrl(epNumericId, category === "dub")
     : buildMegaplayUrl("0", false); // non-null placeholder
 
-  // ── AnimeKai servers ──
+  // ── AnimeKai servers (scraper not available in production) ──
   if (server === "anikai-1" || server === "anikai-2") {
-    const [slug, epParam] = episodeId.split("?");
-    let epNum = "1";
-    if (epParam && epParam.startsWith("ep=")) epNum = epParam.replace("ep=", "");
-    const anikaiUrl = `https://anikai.to/watch/${slug}#ep=${epNum}`;
-    try {
-      const urls = await scrapeAnikaiSources(anikaiUrl);
-      if (urls.length > 0) {
-        return {
-          sources: urls.map((url) => ({ url, isM3U8: url.includes(".m3u8") })),
-          subtitles: [],
-          headers: {},
-          megaplayUrl,
-        };
-      }
-    } catch {
-      // fall through to megaplay
-    }
     return { sources: [], subtitles: [], headers: {}, megaplayUrl };
   }
 
