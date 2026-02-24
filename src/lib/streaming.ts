@@ -11,7 +11,6 @@
 
 import { HiAnime } from "aniwatch";
 import { unstable_cache } from "next/cache";
-import { scrapeAnikaiSources } from "@/lib/anikaiScraper";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 export { extractHiAnimeEpId, buildMegaplayUrl };
 
