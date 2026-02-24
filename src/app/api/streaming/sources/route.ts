@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchEpisodeSources } from "@/lib/streaming";
+import { fetchFallbackIframe } from "@/lib/fallback";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
  *   category   — "sub" (default) | "dub" | "raw"
  *
  * Returns:
- *   { sources: [{ url, quality, isM3U8 }], subtitles: [{ url, lang }], headers }
+ *   { sources: [{ url, quality, isM3U8 }], subtitles: [{ url, lang }], headers, fallbackIframe?: string }
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -26,6 +27,15 @@ export async function GET(req: NextRequest) {
 
   try {
     const data = await fetchEpisodeSources(episodeId, server, category);
+
+    // If HLS extraction fails or returns nothing, proactively fetch iframe
+    if (!data.sources || data.sources.length === 0) {
+      const fallbackUrl = await fetchFallbackIframe(episodeId, server, category);
+      return NextResponse.json({ ...data, fallbackIframe: fallbackUrl }, {
+        headers: { "Cache-Control": "private, max-age=1800" },
+      });
+    }
+
     return NextResponse.json(data, {
       headers: {
         // Short cache: signed URLs expire within a few hours
@@ -34,8 +44,10 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[/api/streaming/sources]", err);
+    // Even if it throws, try fetching the iframe
+    const fallbackUrl = await fetchFallbackIframe(episodeId, server, category);
     return NextResponse.json(
-      { sources: [], subtitles: [], headers: {} },
+      { sources: [], subtitles: [], headers: {}, fallbackIframe: fallbackUrl },
       { status: 200 }
     );
   }

@@ -22,6 +22,7 @@ interface StreamSources {
   sources: { url: string; quality?: string; isM3U8?: boolean }[];
   subtitles: { url: string; lang: string }[];
   headers: Record<string, string>;
+  fallbackIframe?: string;
 }
 
 const SERVER_LABELS: Record<Server, string> = {
@@ -66,9 +67,8 @@ export default function VideoPlayer({
       .then((r) => r.json())
       .then((data: StreamSources) => {
         if (cancelled) return;
-        if (data.sources?.length > 0) {
-          setStreamData(data);
-        } else {
+        setStreamData(data);
+        if (!data.sources || data.sources.length === 0) {
           // No HLS sources from this server/category — fall back to iframe
           setUseFallback(true);
         }
@@ -98,17 +98,18 @@ export default function VideoPlayer({
 
     // Pick the best M3U8 source
     const m3u8 =
-      streamData.sources.find((s) => s.isM3U8) ?? streamData.sources[0];
+      streamData.sources?.find((s) => s.isM3U8) ?? streamData.sources?.[0];
     if (!m3u8) {
       setUseFallback(true);
       return;
     }
 
     // Route through our own proxy to handle Referer + CORS for .ts segments
+    const referer = streamData.headers?.Referer || "https://hianime.to/";
     const proxied =
       `/api/streaming/proxy` +
       `?url=${encodeURIComponent(m3u8.url)}` +
-      `&referer=${encodeURIComponent("https://hianime.to/")}`;
+      `&referer=${encodeURIComponent(referer)}`;
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -171,11 +172,7 @@ export default function VideoPlayer({
   );
 
   // ── Fallback iframe ────────────────────────────────────────────────────────
-  const epId = hianimeEpisodeId ? extractHiAnimeEpId(hianimeEpisodeId) : null;
-  const fallbackUrl = epId
-    ? buildMegaplayUrl(epId, category === "dub")
-    : null;
-
+  const fallbackUrl = streamData?.fallbackIframe || null;
   const hasSource = !!hianimeEpisodeId;
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -194,8 +191,8 @@ export default function VideoPlayer({
             key={s}
             onClick={() => switchServer(s)}
             className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 transition-colors ${server === s
-                ? "bg-[#e8002d] text-white"
-                : "bg-[#1a1a1a] border border-[#222] text-[#555] hover:text-white hover:border-[#e8002d]"
+              ? "bg-[#e8002d] text-white"
+              : "bg-[#1a1a1a] border border-[#222] text-[#555] hover:text-white hover:border-[#e8002d]"
               }`}
           >
             {SERVER_LABELS[s]}
@@ -213,8 +210,8 @@ export default function VideoPlayer({
             key={c}
             onClick={() => switchCategory(c)}
             className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 transition-colors ${category === c
-                ? "bg-[#e8002d] text-white"
-                : "bg-[#1a1a1a] border border-[#222] text-[#555] hover:text-white hover:border-[#e8002d]"
+              ? "bg-[#e8002d] text-white"
+              : "bg-[#1a1a1a] border border-[#222] text-[#555] hover:text-white hover:border-[#e8002d]"
               }`}
           >
             {c}
