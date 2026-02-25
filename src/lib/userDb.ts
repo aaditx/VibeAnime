@@ -15,6 +15,10 @@ export interface User {
   displayName?: string;    // optional override, max 30 chars
   bio?: string;            // max 160 chars
   bannerColor?: string;    // CSS hex for profile hero accent
+  // Gamification
+  loginStreak?: number;    // consecutive days logged in
+  lastActiveDate?: string; // ISO date string (YYYY-MM-DD) of last login
+  totalPoints?: number;    // cached total points for leaderboard queries
 }
 
 async function getCollection() {
@@ -295,3 +299,123 @@ export async function updateUserProfile(userId: string, profile: UserProfile): P
   await col.updateOne({ id: userId }, { $set: update });
 }
 
+// ─── Streak Tracking ────────────────────────────────────────────────────────────
+
+export interface UserStreak {
+  loginStreak: number;
+  lastActiveDate: string;
+}
+
+// Returns updated streak. Call this once per day per user (idempotent).
+export async function updateUserStreak(userId: string): Promise<UserStreak> {
+  const col = await getCollection();
+  const user = await col.findOne({ id: userId }, { projection: { loginStreak: 1, lastActiveDate: 1 } });
+
+  const todayISO = new Date().toISOString().slice(0, 10); // e.g. "2026-02-25"
+  const lastDate = user?.lastActiveDate ?? "";
+
+  if (lastDate === todayISO) {
+    // Already recorded today — no change
+    return { loginStreak: user?.loginStreak ?? 1, lastActiveDate: todayISO };
+  }
+
+  // Check if yesterday was the last active day (streak continues)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayISO = yesterday.toISOString().slice(0, 10);
+
+  const currentStreak = user?.loginStreak ?? 0;
+  const newStreak = lastDate === yesterdayISO ? currentStreak + 1 : 1;
+
+  await col.updateOne(
+    { id: userId },
+    { $set: { loginStreak: newStreak, lastActiveDate: todayISO } }
+  );
+
+  return { loginStreak: newStreak, lastActiveDate: todayISO };
+}
+
+export async function getUserStreak(userId: string): Promise<UserStreak> {
+  const col = await getCollection();
+  const user = await col.findOne(
+    { id: userId },
+    { projection: { loginStreak: 1, lastActiveDate: 1 } }
+  );
+  return {
+    loginStreak: user?.loginStreak ?? 0,
+    lastActiveDate: user?.lastActiveDate ?? "",
+  };
+}
+
+// ─── Leaderboard ──────────────────────────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  displayName?: string;
+  avatarId?: string;
+  totalPoints: number;
+  loginStreak: number;
+  uniqueAnimeWatched: number;
+  highestBadgeId: string | null;
+}
+
+export async function saveTotalPoints(userId: string, points: number): Promise<void> {
+  const col = await getCollection();
+  await col.updateOne({ id: userId }, { $set: { totalPoints: points } });
+}
+
+export async function getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
+  const col = await getCollection();
+
+  // Get top users by cached totalPoints
+  const users = await col
+    .find(
+      { totalPoints: { $gt: 0 } },
+      {
+        projection: {
+          _id: 0, id: 1, name: 1, displayName: 1, avatarId: 1,
+          totalPoints: 1, loginStreak: 1,
+        },
+      }
+    )
+    .sort({ totalPoints: -1 })
+    .limit(limit)
+    .toArray();
+
+  // Fetch anime watch counts for all these users in one query
+  const client = await getMongoClient();
+  const wpCol = client.db(DB_NAME).collection<{ userId: string; animeId: string }>("watchProgress");
+
+  const userIds = users.map((u) => u.id);
+  const animeCounts = await wpCol
+    .aggregate<{ _id: string; count: number }>([
+      { $match: { userId: { $in: userIds } } },
+      { $group: { _id: "$userId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  const animeCountMap = new Map(animeCounts.map((a) => [a._id, a.count]));
+
+  // Import badge tiers here to avoid circular dep — use dynamic require pattern
+  const { BADGE_TIERS } = await import("@/lib/badges");
+
+  return users.map((user, i) => {
+    const uniqueAnimeWatched = animeCountMap.get(user.id) ?? 0;
+    const earned = BADGE_TIERS.filter((b) => uniqueAnimeWatched >= b.threshold);
+    const highestBadgeId = earned.length > 0 ? earned[earned.length - 1].id : null;
+
+    return {
+      rank: i + 1,
+      userId: user.id,
+      name: user.name,
+      displayName: user.displayName,
+      avatarId: user.avatarId,
+      totalPoints: user.totalPoints ?? 0,
+      loginStreak: user.loginStreak ?? 0,
+      uniqueAnimeWatched,
+      highestBadgeId,
+    };
+  });
+}

@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import BadgeCard from "@/components/BadgeCard";
 import { type BadgeComputeResult } from "@/lib/badges";
 import { type UserProfile } from "@/lib/userDb";
-import { LogOut, Tv2, Film, Zap, Trophy, ChevronRight, Edit3 } from "lucide-react";
+import { LogOut, Tv2, Film, Zap, Trophy, ChevronRight, Edit3, Flame } from "lucide-react";
 import Image from "next/image";
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function ProfileClient({ user, stats, totalTiers, profile = {} }: Props) {
-    const { points, uniqueAnimeWatched, totalEpisodesWatched, allBadges, earnedBadges, nextBadge, highestBadge } = stats;
+    const { points, uniqueAnimeWatched, totalEpisodesWatched, allBadges, earnedBadges, nextBadge, highestBadge, loginStreak, streakBonus } = stats;
     const { avatarId, displayName, bio, bannerColor = "#e8002d" } = profile;
 
     const progressPct = nextBadge
@@ -96,13 +96,20 @@ export default function ProfileClient({ user, stats, totalTiers, profile = {} }:
                             )}
                         </div>
 
-                        {/* Points */}
-                        <div className="flex-none text-right">
-                            <p className="text-[10px] font-black text-[#e8002d] uppercase tracking-widest">Total Points</p>
-                            <p className="text-4xl sm:text-5xl font-black text-white tabular-nums">
-                                {points.toLocaleString()}
-                            </p>
-                            <p className="text-[10px] text-[#555] uppercase tracking-widest mt-1">pts</p>
+                        {/* Points + Streak */}
+                        <div className="flex-none text-right space-y-3">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: bannerColor }}>Total Points</p>
+                                <p className="text-4xl sm:text-5xl font-black text-white tabular-nums">{points.toLocaleString()}</p>
+                                <p className="text-[10px] text-[#555] uppercase tracking-widest mt-1">pts</p>
+                            </div>
+                            {loginStreak > 0 && (
+                                <div className="inline-flex items-center gap-1.5 border border-orange-500/30 bg-orange-500/10 px-3 py-1.5">
+                                    <Flame className="w-3.5 h-3.5 text-orange-400" />
+                                    <span className="text-xs font-black text-orange-400 tabular-nums">{loginStreak}</span>
+                                    <span className="text-[9px] text-orange-300/70 uppercase font-bold tracking-wider">day streak</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -201,10 +208,16 @@ export default function ProfileClient({ user, stats, totalTiers, profile = {} }:
                             <span className="text-[#888]">📺 Unique anime bonus (×10 pts each)</span>
                             <span className="text-white font-black">+{(uniqueAnimeWatched * 10).toLocaleString()} pts</span>
                         </div>
-                        <div className="flex items-center justify-between pb-2">
+                        <div className="flex items-center justify-between border-b border-[#111] pb-2">
                             <span className="text-[#888]">🎞 Episode bonus (×2 pts each)</span>
                             <span className="text-white font-black">+{(totalEpisodesWatched * 2).toLocaleString()} pts</span>
                         </div>
+                        {streakBonus > 0 && (
+                            <div className="flex items-center justify-between border-b border-[#111] pb-2">
+                                <span className="text-orange-400/80">🔥 Streak bonus ({loginStreak} days × 5 pts)</span>
+                                <span className="text-orange-400 font-black">+{streakBonus.toLocaleString()} pts</span>
+                            </div>
+                        )}
                         <div className="flex items-center justify-between pt-2 border-t-2 border-[#e8002d]">
                             <span className="text-white font-black uppercase tracking-widest">Total</span>
                             <span className="text-[#e8002d] font-black text-base">{points.toLocaleString()} pts</span>

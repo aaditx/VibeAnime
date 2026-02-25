@@ -168,15 +168,18 @@ export interface BadgeComputeResult {
     earnedBadges: EarnedBadge[];
     allBadges: EarnedBadge[];
     points: number;
+    streakBonus: number;
     uniqueAnimeWatched: number;
     totalEpisodesWatched: number;
+    loginStreak: number;
     nextBadge: (Badge & { progress: number }) | null;
     highestBadge: Badge | null;
 }
 
 export function computeBadges(
     uniqueAnimeWatched: number,
-    totalEpisodesWatched: number
+    totalEpisodesWatched: number,
+    loginStreak = 0
 ): BadgeComputeResult {
     const earned = BADGE_TIERS.filter((b) => uniqueAnimeWatched >= b.threshold);
     const locked = BADGE_TIERS.filter((b) => uniqueAnimeWatched < b.threshold);
@@ -187,8 +190,10 @@ export function computeBadges(
     const passivePoints =
         uniqueAnimeWatched * POINTS_PER_UNIQUE_ANIME +
         totalEpisodesWatched * POINTS_PER_EPISODE;
+    // Streak bonus: +5 pts per streak day, capped at 100 days (max +500)
+    const streakBonus = Math.min(loginStreak, 100) * 5;
 
-    const points = milestonePoints + passivePoints;
+    const points = milestonePoints + passivePoints + streakBonus;
 
     const allBadges: EarnedBadge[] = BADGE_TIERS.map((b) => ({
         ...b,
@@ -205,8 +210,10 @@ export function computeBadges(
         earnedBadges: allBadges.filter((b) => b.earnedAt === "earned"),
         allBadges,
         points,
+        streakBonus,
         uniqueAnimeWatched,
         totalEpisodesWatched,
+        loginStreak,
         nextBadge,
         highestBadge,
     };

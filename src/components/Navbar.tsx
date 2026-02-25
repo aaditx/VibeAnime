@@ -95,197 +95,218 @@ export default function Navbar() {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
         scrolled
-          ? "bg-[#0a0a0a]/95 backdrop-blur-md border-b-2 border-[#e8002d] shadow-[0_4px_24px_rgba(232,0,45,0.18)]"
-          : "bg-[#0a0a0a]/70 backdrop-blur-sm border-b border-[#1e1e1e]"
+          ? "bg-[#0d0d14]/95 backdrop-blur-xl border-b border-[#ffffff12] shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          : "bg-transparent backdrop-blur-sm border-b border-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-14 gap-4">
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-0 flex-none">
-            <div className="border-2 border-white px-2 py-0.5 flex items-center">
-              <span className="font-black text-lg tracking-tight text-white uppercase">Vibe</span>
-              <span className="font-black text-lg tracking-tight text-[#e8002d] uppercase">Anime</span>
-            </div>
-          </Link>
-
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-0">
-            <Link
-              href="/"
-              className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#888] hover:text-white hover:bg-white/5 transition-all"
-            >
-              Home
-            </Link>
-
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#888] hover:text-white hover:bg-white/5 transition-all"
-              >
-                {link.label}
+        <div className={cn(
+          "flex items-center h-14 gap-4",
+          pathname === "/" ? "justify-center" : "justify-between"
+        )}>
+          {/* Left: Logo & Nav */}
+          <div className={cn(
+            "flex items-center",
+            pathname === "/" ? "gap-0" : "gap-6 md:gap-10"
+          )}>
+            {/* Logo - Hide on root page */}
+            {pathname !== "/" && (
+              <Link href="/" className="flex items-center gap-1.5 focus:outline-none">
+                <span className="text-2xl font-black italic tracking-tighter" style={{ fontFamily: "var(--font-bebas)" }}>
+                  <span className="text-white">VIBE</span>
+                  <span className="text-[#e8002d]">ANIME</span>
+                </span>
               </Link>
-            ))}
-
-            {/* Genres dropdown */}
-            <div ref={genreRef} className="relative">
-              <button
-                onClick={() => setGenreOpen(!genreOpen)}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all",
-                  genreOpen
-                    ? "text-[#e8002d] bg-[#e8002d]/10"
-                    : "text-[#888] hover:text-white hover:bg-white/5"
-                )}
-              >
-                <Grid3x3 className="w-3.5 h-3.5" />
-                Genres
-                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", genreOpen && "rotate-180")} />
-              </button>
-
-              {genreOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 w-[440px] bg-[#0a0a0a] border-2 border-[#e8002d] shadow-[0_8px_40px_rgba(232,0,45,0.2)] p-5 z-50">
-                  <p className="text-[10px] font-black text-[#e8002d] uppercase tracking-widest mb-4 border-b border-[#222] pb-2">Browse by Genre</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {GENRES.map((g) => (
-                      <Link
-                        key={g}
-                        href={`/search?genre=${encodeURIComponent(g)}`}
-                        className="flex flex-col items-center gap-1 p-2 border border-[#222] hover:border-[#e8002d] hover:bg-[#e8002d]/10 transition-all group"
-                      >
-                        <span className="text-lg">{GENRE_EMOJIS[g] ?? "🎬"}</span>
-                        <span className="text-[9px] font-bold text-[#888] group-hover:text-white uppercase tracking-wide text-center leading-tight">
-                          {g}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[#222]">
-                    <Link
-                      href="/search"
-                      className="flex items-center justify-center gap-2 text-[11px] font-black text-[#e8002d] hover:text-white uppercase tracking-widest transition-colors"
-                    >
-                      Browse All Anime →
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-          </nav>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-2">
-            {searchOpen ? (
-              <form onSubmit={handleSearch} className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
-                  <input
-                    ref={searchInputRef}
-                    autoFocus
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="SEARCH ANIME..."
-                    className="bg-[#111] border-2 border-[#e8002d] text-white text-xs font-bold uppercase tracking-wider placeholder:normal-case placeholder:font-normal placeholder:tracking-normal rounded-none pl-9 pr-4 py-2 w-36 sm:w-52 focus:outline-none transition-all"
-                  />
-                </div>
-                <button type="button" onClick={() => setSearchOpen(false)} className="text-[#888] hover:text-white p-1">
-                  <X className="w-5 h-5" />
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
-                className="p-2 text-[#888] hover:text-[#e8002d] transition-all"
-                title="Search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
             )}
 
-            <button
-              onClick={handleRandomAnime}
-              className="hidden md:block p-2 text-[#888] hover:text-[#e8002d] transition-all"
-              title="Random anime"
-            >
-              <Shuffle className="w-5 h-5" />
-            </button>
-
-            <Link
-              href="/watchlist"
-              className="p-2 text-[#888] hover:text-[#e8002d] transition-all hidden md:block"
-              title="Watchlist"
-            >
-              <Bookmark className="w-5 h-5" />
-            </Link>
-
-            {session ? (
-              <div className="hidden md:flex items-center gap-0">
-                {/* Points pill */}
-                {userPoints !== null && (
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-1">
+              {[{ href: "/home", label: "Home" }, { href: "/leaderboard", label: "🏆 Ranks" }, ...navLinks].map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/home" && link.href !== "/leaderboard" && pathname.startsWith(link.href.split("?")[0]));
+                return (
                   <Link
-                    href="/profile"
-                    className="flex items-center gap-1 border border-[#e8002d]/40 bg-[#e8002d]/10 hover:bg-[#e8002d]/20 px-2.5 py-1.5 transition-all"
-                    title="View your profile & badges"
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "relative px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all rounded-sm",
+                      isActive
+                        ? "text-[#e8002d]"
+                        : "text-[#aaa] hover:text-white hover:bg-white/5"
+                    )}
                   >
-                    <Zap className="w-3 h-3 text-[#e8002d]" />
-                    <span className="text-[10px] font-black text-[#e8002d] tabular-nums">
-                      {userPoints.toLocaleString()}
-                    </span>
+                    {(link as { label: string }).label}
+                    {isActive && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-[#e8002d] rounded-full" />
+                    )}
                   </Link>
-                )}
-                {/* User name → profile */}
-                <Link
-                  href="/profile"
+                );
+              })}
+
+              {/* Genres dropdown */}
+              <div ref={genreRef} className="relative">
+                <button
+                  onClick={() => setGenreOpen(!genreOpen)}
                   className={cn(
-                    "flex items-center gap-1.5 border border-[#333] px-3 py-1.5 hover:border-[#e8002d] transition-all group",
-                    userPoints !== null && "border-l-0"
+                    "relative flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all rounded-sm",
+                    genreOpen
+                      ? "text-[#e8002d]"
+                      : "text-[#aaa] hover:text-white hover:bg-white/5"
                   )}
-                  title="Your profile"
                 >
-                  {userAvatar ? (
-                    <div className="relative w-4 h-4 rounded-full overflow-hidden border border-[#333] group-hover:border-[#e8002d] transition-colors">
-                      <Image
-                        src={`/avatars/${userAvatar}.${parseInt(userAvatar.split("-")[1]) > 5 ? 'svg' : 'png'}`}
-                        alt="Avatar"
-                        fill
-                        className="object-cover"
+                  <Grid3x3 className="w-3.5 h-3.5" />
+                  Genres
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", genreOpen && "rotate-180")} />
+                  {genreOpen && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-[#e8002d] rounded-full" />
+                  )}
+                </button>
+
+                {genreOpen && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[440px] bg-[#0d0d14]/98 backdrop-blur-xl border border-[#ffffff14] shadow-[0_16px_48px_rgba(0,0,0,0.6)] p-5 z-50 rounded-xl">
+                    <p className="text-[10px] font-black text-[#e8002d] uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Browse by Genre</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {GENRES.map((g) => (
+                        <Link
+                          key={g}
+                          href={`/search?genre=${encodeURIComponent(g)}`}
+                          className="flex flex-col items-center gap-1 p-2 border border-white/5 hover:border-[#e8002d] hover:bg-[#e8002d]/10 transition-all group rounded-lg"
+                        >
+                          <span className="text-lg">{GENRE_EMOJIS[g] ?? "🎬"}</span>
+                          <span className="text-[9px] font-bold text-[#888] group-hover:text-white uppercase tracking-wide text-center leading-tight">
+                            {g}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-white/5">
+                      <Link
+                        href="/search"
+                        className="flex items-center justify-center gap-2 text-[11px] font-black text-[#e8002d] hover:text-white uppercase tracking-widest transition-colors"
+                      >
+                        Browse All Anime →
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </nav>
+          </div>
+
+          {/* Right actions - Hide on root page */}
+          <div className="flex items-center gap-2">
+            {pathname !== "/" && (
+              <>
+                {searchOpen ? (
+                  <form onSubmit={handleSearch} className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
+                      <input
+                        ref={searchInputRef}
+                        autoFocus
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="SEARCH ANIME..."
+                        className="bg-[#111] border-2 border-[#e8002d] text-white text-xs font-bold uppercase tracking-wider placeholder:normal-case placeholder:font-normal placeholder:tracking-normal rounded-none pl-9 pr-4 py-2 w-36 sm:w-52 focus:outline-none transition-all"
                       />
                     </div>
-                  ) : (
-                    <User className="w-3.5 h-3.5 text-[#e8002d]" />
-                  )}
-                  <span className="text-xs font-bold text-white uppercase tracking-wide group-hover:text-[#e8002d] transition-colors">
-                    {session.user?.name?.split(" ")[0]}
-                  </span>
-                </Link>
+                    <button type="button" onClick={() => setSearchOpen(false)} className="text-[#888] hover:text-white p-1">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+                    className="p-2 text-[#888] hover:text-[#e8002d] transition-all"
+                    title="Search"
+                  >
+                    <Search className="w-5 h-5" />
+                  </button>
+                )}
+
                 <button
-                  onClick={() => signOut()}
-                  className="border border-[#333] border-l-0 px-2.5 py-1.5 text-[#888] hover:text-[#e8002d] hover:border-[#e8002d] transition-all"
-                  title="Sign out"
+                  onClick={handleRandomAnime}
+                  className="hidden md:block p-2 text-[#888] hover:text-[#e8002d] transition-all"
+                  title="Random anime"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <Shuffle className="w-5 h-5" />
                 </button>
-              </div>
-            ) : (
-              <Link
-                href="/auth/login"
-                className="hidden md:flex items-center gap-1.5 text-xs font-black bg-[#e8002d] hover:bg-[#c8001d] text-white px-4 py-2 uppercase tracking-widest transition-all"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                Sign In
-              </Link>
+
+                <Link
+                  href="/watchlist"
+                  className="p-2 text-[#888] hover:text-[#e8002d] transition-all hidden md:block"
+                  title="Watchlist"
+                >
+                  <Bookmark className="w-5 h-5" />
+                </Link>
+
+                {session ? (
+                  <div className="hidden md:flex items-center gap-0">
+                    {/* Points pill */}
+                    {userPoints !== null && (
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-1 border border-[#e8002d]/40 bg-[#e8002d]/10 hover:bg-[#e8002d]/20 px-2.5 py-1.5 transition-all"
+                        title="View your profile & badges"
+                      >
+                        <Zap className="w-3 h-3 text-[#e8002d]" />
+                        <span className="text-[10px] font-black text-[#e8002d] tabular-nums">
+                          {userPoints.toLocaleString()}
+                        </span>
+                      </Link>
+                    )}
+                    {/* User name → profile */}
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 pl-2 pr-4 py-1.5 transition-all group"
+                    >
+                      {session.user?.image ? (
+                        <Image
+                          src={session.user.image}
+                          alt=""
+                          width={24}
+                          height={24}
+                          className="rounded-full ring-1 ring-[#e8002d]/50 group-hover:ring-[#e8002d] transition-all"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-[#222] flex items-center justify-center ring-1 ring-white/10">
+                          <User className="w-3.5 h-3.5 text-[#888]" />
+                        </div>
+                      )}
+                      <span className="text-[10px] font-black text-white tracking-widest uppercase">
+                        {session.user?.name || "User"}
+                      </span>
+                    </Link>
+
+                    {/* Quick logout */}
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="border border-white/10 border-l-0 hover:border-white/30 hover:bg-white/10 px-3 py-1.5 transition-all"
+                      title="Log Out"
+                    >
+                      <LogOut className="w-4 h-4 text-[#888] hover:text-[#e8002d] transition-colors" />
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="hidden md:flex items-center gap-2 bg-[#e8002d] hover:bg-[#c8001d] text-white px-5 py-1.5 font-bold text-xs uppercase tracking-widest transition-colors shadow-[0_0_15px_rgba(232,0,45,0.3)] hover:shadow-[0_0_20px_rgba(232,0,45,0.5)]"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    Sign In
+                  </Link>
+                )}
+              </>
             )}
 
+            {/* Mobile Menu Toggle (Always show if not hidden logic applies) */}
             <button
+              className="md:hidden p-2 text-[#888] hover:text-white"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 text-[#888] hover:text-white transition-all"
             >
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
@@ -295,7 +316,8 @@ export default function Navbar() {
           <div className="md:hidden bg-[#0a0a0a] border-t-2 border-[#e8002d]">
             <div className="p-4 space-y-0">
               {[
-                { href: "/", label: "Home" },
+                { href: "/home", label: "Home" },
+                { href: "/leaderboard", label: "🏆 Leaderboard" },
                 { href: "/search?sort=TRENDING_DESC", label: "Trending" },
                 { href: "/search?sort=POPULARITY_DESC", label: "Popular" },
                 { href: "/search?sort=SCORE_DESC", label: "Top Rated" },
