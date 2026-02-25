@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Search, Menu, X, Bookmark, LogIn, LogOut, User,
-  ChevronDown, Shuffle, Flame, Star, TrendingUp, Grid3x3,
+  ChevronDown, Shuffle, Flame, Star, TrendingUp, Grid3x3, Zap,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { GENRES } from "@/lib/anilist";
+import Image from "next/image";
 
 const GENRE_EMOJIS: Record<string, string> = {
   Action: "⚔️", Adventure: "🗺️", Comedy: "😂", Drama: "🎭", Fantasy: "🧙",
@@ -24,6 +25,8 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [genreOpen, setGenreOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [userPoints, setUserPoints] = useState<number | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -50,6 +53,18 @@ export default function Navbar() {
     setMenuOpen(false);
     setGenreOpen(false);
   }, [pathname]);
+
+  // Fetch points & avatar whenever user logs in
+  useEffect(() => {
+    if (!session?.user?.id) { setUserPoints(null); setUserAvatar(null); return; }
+    fetch("/api/user/stats")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.points != null) setUserPoints(data.points);
+        if (data?.avatarId) setUserAvatar(data.avatarId);
+      })
+      .catch(() => { });
+  }, [session?.user?.id]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,14 +224,48 @@ export default function Navbar() {
             </Link>
 
             {session ? (
-              <div className="hidden md:flex items-center gap-2 border border-[#333] px-3 py-1.5">
-                <User className="w-3.5 h-3.5 text-[#e8002d]" />
-                <span className="text-xs font-bold text-white uppercase tracking-wide">
-                  {session.user?.name?.split(" ")[0]}
-                </span>
+              <div className="hidden md:flex items-center gap-0">
+                {/* Points pill */}
+                {userPoints !== null && (
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-1 border border-[#e8002d]/40 bg-[#e8002d]/10 hover:bg-[#e8002d]/20 px-2.5 py-1.5 transition-all"
+                    title="View your profile & badges"
+                  >
+                    <Zap className="w-3 h-3 text-[#e8002d]" />
+                    <span className="text-[10px] font-black text-[#e8002d] tabular-nums">
+                      {userPoints.toLocaleString()}
+                    </span>
+                  </Link>
+                )}
+                {/* User name → profile */}
+                <Link
+                  href="/profile"
+                  className={cn(
+                    "flex items-center gap-1.5 border border-[#333] px-3 py-1.5 hover:border-[#e8002d] transition-all group",
+                    userPoints !== null && "border-l-0"
+                  )}
+                  title="Your profile"
+                >
+                  {userAvatar ? (
+                    <div className="relative w-4 h-4 rounded-full overflow-hidden border border-[#333] group-hover:border-[#e8002d] transition-colors">
+                      <Image
+                        src={`/avatars/${userAvatar}.${parseInt(userAvatar.split("-")[1]) > 5 ? 'svg' : 'png'}`}
+                        alt="Avatar"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-[#e8002d]" />
+                  )}
+                  <span className="text-xs font-bold text-white uppercase tracking-wide group-hover:text-[#e8002d] transition-colors">
+                    {session.user?.name?.split(" ")[0]}
+                  </span>
+                </Link>
                 <button
                   onClick={() => signOut()}
-                  className="ml-1 text-[#888] hover:text-[#e8002d] transition-colors"
+                  className="border border-[#333] border-l-0 px-2.5 py-1.5 text-[#888] hover:text-[#e8002d] hover:border-[#e8002d] transition-all"
                   title="Sign out"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -252,6 +301,7 @@ export default function Navbar() {
                 { href: "/search?sort=SCORE_DESC", label: "Top Rated" },
                 { href: "/watchlist", label: "Watchlist" },
                 { href: "/search", label: "Browse All" },
+                ...(session ? [{ href: "/profile", label: userPoints !== null ? `⚡ Profile (${userPoints.toLocaleString()} pts)` : "Profile" }] : []),
               ].map((link) => (
                 <Link
                   key={link.href}

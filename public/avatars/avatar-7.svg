@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" fill="#0a0a0a"/>
+  <circle cx="128" cy="128" r="118" fill="#111" stroke="#f472b6" stroke-width="2"/>
+  <!-- Body base -->
+  <rect x="88" y="155" width="80" height="50" rx="6" fill="#fce7f3"/>
+  <!-- Frills -->
+  <path d="M88 160 Q108 148 128 160 Q148 148 168 160 L168 175 Q148 163 128 175 Q108 163 88 175 Z" fill="#fbcfe8"/>
+  <!-- Face -->
+  <ellipse cx="128" cy="108" rx="46" ry="50" fill="#fde8d8"/>
+  <!-- Cat ears -->
+  <polygon points="90,72 75,40 108,65" fill="#f9a8d4"/>
+  <polygon points="90,72 82,52 103,66" fill="#fce7f3"/>
+  <polygon points="166,72 181,40 148,65" fill="#f9a8d4"/>
+  <polygon points="166,72 174,52 153,66" fill="#fce7f3"/>
+  <!-- Hair -->
+  <ellipse cx="128" cy="72" rx="50" ry="30" fill="#f9a8d4"/>
+  <rect x="78" y="72" width="20" height="50" rx="5" fill="#f9a8d4"/>
+  <rect x="158" y="72" width="20" height="50" rx="5" fill="#f9a8d4"/>
+  <!-- Long side hair -->
+  <ellipse cx="90" cy="120" rx="14" ry="28" fill="#f9a8d4"/>
+  <ellipse cx="166" cy="120" rx="14" ry="28" fill="#f9a8d4"/>
+  <!-- Eyes -->
+  <ellipse cx="110" cy="108" rx="14" ry="15" fill="white"/>
+  <circle cx="110" cy="109" r="9" fill="#f59e0b"/>
+  <circle cx="110" cy="109" r="5" fill="#78350f"/>
+  <circle cx="113" cy="106" r="3" fill="white"/>
+  <ellipse cx="110" cy="96" rx="15" ry="5" fill="#f9a8d4"/>
+  <ellipse cx="146" cy="108" rx="14" ry="15" fill="white"/>
+  <circle cx="146" cy="109" r="9" fill="#f59e0b"/>
+  <circle cx="146" cy="109" r="5" fill="#78350f"/>
+  <circle cx="149" cy="106" r="3" fill="white"/>
+  <ellipse cx="146" cy="96" rx="15" ry="5" fill="#f9a8d4"/>
+  <!-- Blush -->
+  <ellipse cx="98" cy="122" rx="12" ry="7" fill="#f9a8d4" opacity="0.6"/>
+  <ellipse cx="158" cy="122" rx="12" ry="7" fill="#f9a8d4" opacity="0.6"/>
+  <!-- Nose -->
+  <circle cx="128" cy="120" r="3" fill="#f0abab"/>
+  <!-- Smile -->
+  <path d="M114 132 Q128 142 142 132" stroke="#e57373" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>

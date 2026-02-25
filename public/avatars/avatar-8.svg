@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" fill="#0a0a0a"/>
+  <circle cx="128" cy="128" r="118" fill="#111" stroke="#fbbf24" stroke-width="2"/>
+  <!-- Armor body -->
+  <rect x="82" y="158" width="92" height="50" rx="4" fill="#92400e"/>
+  <rect x="90" y="155" width="76" height="16" rx="3" fill="#b45309"/>
+  <!-- Feather details on armor -->
+  <path d="M90 165 Q80 155 85 145 Q95 155 90 165" fill="#d97706"/>
+  <path d="M166 165 Q176 155 171 145 Q161 155 166 165" fill="#d97706"/>
+  <!-- Face - dark skin -->
+  <ellipse cx="128" cy="108" rx="45" ry="50" fill="#92400e"/>
+  <ellipse cx="128" cy="88" rx="44" ry="36" fill="#a16207"/>
+  <!-- Braided white hair -->
+  <ellipse cx="128" cy="65" rx="48" ry="24" fill="#f1f5f9"/>
+  <rect x="82" y="60" width="14" height="55" rx="7" fill="#f1f5f9"/>
+  <rect x="160" y="60" width="14" height="55" rx="7" fill="#f1f5f9"/>
+  <!-- Braid details -->
+  <path d="M82 70 Q89 75 82 82 Q89 89 82 96" stroke="#cbd5e1" stroke-width="3" fill="none"/>
+  <path d="M174 70 Q167 75 174 82 Q167 89 174 96" stroke="#cbd5e1" stroke-width="3" fill="none"/>
+  <!-- Long braid down -->
+  <rect x="115" y="148" width="26" height="60" rx="13" fill="#f1f5f9"/>
+  <!-- Eyes - golden -->
+  <ellipse cx="110" cy="108" rx="13" ry="12" fill="#1c1917"/>
+  <circle cx="110" cy="108" r="9" fill="#d97706"/>
+  <circle cx="110" cy="108" r="5" fill="#92400e"/>
+  <circle cx="113" cy="105" r="3" fill="white"/>
+  <ellipse cx="146" cy="108" rx="13" ry="12" fill="#1c1917"/>
+  <circle cx="146" cy="108" r="9" fill="#d97706"/>
+  <circle cx="146" cy="108" r="5" fill="#92400e"/>
+  <circle cx="149" cy="105" r="3" fill="white"/>
+  <!-- Nose -->
+  <path d="M124 120 L128 127 L132 120" stroke="#7c2d12" stroke-width="1.5" fill="none"/>
+  <!-- Confident mouth -->
+  <path d="M116 136 Q128 141 140 136" stroke="#7c2d12" stroke-width="2" fill="none"/>
+  <!-- Gold earring -->
+  <circle cx="84" cy="116" r="5" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <circle cx="172" cy="116" r="5" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+</svg>

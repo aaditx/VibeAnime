@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" fill="#0a0a0a"/>
+  <circle cx="128" cy="128" r="118" fill="#111" stroke="#94a3b8" stroke-width="2"/>
+  <!-- Armor body -->
+  <rect x="78" y="155" width="100" height="55" rx="2" fill="#1e293b"/>
+  <rect x="88" y="150" width="80" height="20" rx="1" fill="#334155"/>
+  <!-- Red armor details -->
+  <rect x="108" y="148" width="40" height="10" fill="#dc2626"/>
+  <path d="M88 158 L78 155 L78 200 L88 200 Z" fill="#0f172a"/>
+  <path d="M168 158 L178 155 L178 200 L168 200 Z" fill="#0f172a"/>
+  <!-- Face -->
+  <ellipse cx="128" cy="105" rx="44" ry="50" fill="#f5e6d3"/>
+  <!-- Black hair - topknot style -->
+  <ellipse cx="128" cy="62" rx="44" ry="20" fill="#1c1917"/>
+  <rect x="84" y="55" width="88" height="35" rx="5" fill="#1c1917"/>
+  <!-- Topknot -->
+  <ellipse cx="128" cy="45" rx="14" ry="20" fill="#1c1917"/>
+  <ellipse cx="128" cy="42" rx="10" ry="6" fill="#292524"/>
+  <!-- Sideburns -->
+  <rect x="80" y="80" width="16" height="35" rx="4" fill="#1c1917"/>
+  <rect x="160" y="80" width="16" height="35" rx="4" fill="#1c1917"/>
+  <!-- Eyes - sharp dark -->
+  <path d="M96 105 L124 100 L124 116 L96 116 Z" fill="#f5e6d3"/>
+  <ellipse cx="110" cy="108" rx="12" ry="10" fill="#1c1917"/>
+  <circle cx="110" cy="108" r="6" fill="#292524"/>
+  <circle cx="113" cy="105" r="2.5" fill="white"/>
+  <path d="M96 102 L124 98" stroke="#1c1917" stroke-width="4" stroke-linecap="round"/>
+  <path d="M132 105 L160 100 L160 116 L132 116 Z" fill="#f5e6d3"/>
+  <ellipse cx="146" cy="108" rx="12" ry="10" fill="#1c1917"/>
+  <circle cx="146" cy="108" r="6" fill="#292524"/>
+  <circle cx="149" cy="105" r="2.5" fill="white"/>
+  <path d="M132 102 L160 98" stroke="#1c1917" stroke-width="4" stroke-linecap="round"/>
+  <!-- Nose -->
+  <path d="M125 118 L128 125 L131 118" stroke="#c4a882" stroke-width="1.5" fill="none"/>
+  <!-- Stoic thin mouth -->
+  <line x1="112" y1="137" x2="144" y2="137" stroke="#8b7355" stroke-width="2" stroke-linecap="round"/>
+  <!-- Scar -->
+  <line x1="100" y1="95" x2="106" y2="115" stroke="#c4a882" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

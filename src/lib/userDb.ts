@@ -10,6 +10,11 @@ export interface User {
   email: string;
   passwordHash: string;
   createdAt: string;
+  // Profile customization
+  avatarId?: string;       // e.g. "avatar-1" … "avatar-10"
+  displayName?: string;    // optional override, max 30 chars
+  bio?: string;            // max 160 chars
+  bannerColor?: string;    // CSS hex for profile hero accent
 }
 
 async function getCollection() {
@@ -232,5 +237,61 @@ export async function removeWatchlistItem(userId: string, itemId: number): Promi
 export async function clearWatchlist(userId: string): Promise<void> {
   const col = await getWatchlistCollection();
   await col.deleteMany({ userId });
+}
+
+// ─── Watch Stats (for badges/points) ─────────────────────────────────────────
+
+export interface UserWatchStats {
+  uniqueAnimeWatched: number;
+  totalEpisodesWatched: number;
+}
+
+export async function getUserWatchStats(userId: string): Promise<UserWatchStats> {
+  const col = await getProgressCollection();
+
+  // Each document = one unique anime (index enforces userId+animeId uniqueness)
+  const docs = await col
+    .find({ userId }, { projection: { episode: 1 } })
+    .toArray();
+
+  const uniqueAnimeWatched = docs.length;
+  // Sum of the highest episode number reached per anime as a proxy for episodes watched
+  const totalEpisodesWatched = docs.reduce((sum, d) => sum + (d.episode ?? 0), 0);
+
+  return { uniqueAnimeWatched, totalEpisodesWatched };
+}
+
+// ─── Profile Customization ────────────────────────────────────────────────────
+
+export interface UserProfile {
+  avatarId?: string;
+  displayName?: string;
+  bio?: string;
+  bannerColor?: string;
+}
+
+export async function getUserProfile(userId: string): Promise<UserProfile> {
+  const col = await getCollection();
+  const user = await col.findOne(
+    { id: userId },
+    { projection: { _id: 0, avatarId: 1, displayName: 1, bio: 1, bannerColor: 1 } }
+  );
+  if (!user) return {};
+  return {
+    avatarId: user.avatarId,
+    displayName: user.displayName,
+    bio: user.bio,
+    bannerColor: user.bannerColor,
+  };
+}
+
+export async function updateUserProfile(userId: string, profile: UserProfile): Promise<void> {
+  const col = await getCollection();
+  const update: Partial<User> = {};
+  if (profile.avatarId !== undefined) update.avatarId = profile.avatarId;
+  if (profile.displayName !== undefined) update.displayName = profile.displayName.slice(0, 30);
+  if (profile.bio !== undefined) update.bio = profile.bio.slice(0, 160);
+  if (profile.bannerColor !== undefined) update.bannerColor = profile.bannerColor;
+  await col.updateOne({ id: userId }, { $set: update });
 }
 

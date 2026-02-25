@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" fill="#0a0a0a"/>
+  <!-- Soft divine glow background -->
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#fef9c3" stop-opacity="0.15"/>
+    <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/>
+  </radialGradient>
+  <circle cx="128" cy="128" r="118" fill="url(#glow)" stroke="#fde68a" stroke-width="2"/>
+  <!-- Wings behind -->
+  <ellipse cx="72" cy="140" rx="38" ry="55" fill="#f8fafc" opacity="0.85" transform="rotate(-25, 72, 140)"/>
+  <ellipse cx="72" cy="140" rx="25" ry="42" fill="#e2e8f0" opacity="0.7" transform="rotate(-25, 72, 140)"/>
+  <ellipse cx="184" cy="140" rx="38" ry="55" fill="#f8fafc" opacity="0.85" transform="rotate(25, 184, 140)"/>
+  <ellipse cx="184" cy="140" rx="25" ry="42" fill="#e2e8f0" opacity="0.7" transform="rotate(25, 184, 140)"/>
+  <!-- Halo -->
+  <ellipse cx="128" cy="52" rx="34" ry="8" fill="none" stroke="#fbbf24" stroke-width="4" opacity="0.9"/>
+  <ellipse cx="128" cy="52" rx="34" ry="8" fill="none" stroke="#fde68a" stroke-width="2" opacity="0.6"/>
+  <!-- Dress body -->
+  <path d="M88 158 Q128 148 168 158 L175 210 L81 210 Z" fill="#f8fafc"/>
+  <path d="M88 158 Q128 148 168 158 L168 170 Q128 162 88 170 Z" fill="#fde68a" opacity="0.6"/>
+  <!-- Gold trim -->
+  <path d="M88 168 Q128 160 168 168" stroke="#fbbf24" stroke-width="2" fill="none"/>
+  <!-- Face -->
+  <ellipse cx="128" cy="108" rx="44" ry="50" fill="#fef3e2"/>
+  <!-- White flowing hair -->
+  <ellipse cx="128" cy="66" rx="48" ry="26" fill="#f8fafc"/>
+  <rect x="80" y="65" width="20" height="65" rx="10" fill="#f8fafc"/>
+  <rect x="156" y="65" width="20" height="65" rx="10" fill="#f8fafc"/>
+  <ellipse cx="128" cy="65" rx="44" ry="18" fill="white"/>
+  <!-- Eyes - silver glowing -->
+  <ellipse cx="110" cy="108" rx="13" ry="13" fill="#e2e8f0"/>
+  <circle cx="110" cy="108" r="9" fill="#94a3b8"/>
+  <circle cx="110" cy="108" r="5" fill="#cbd5e1"/>
+  <circle cx="113" cy="105" r="3" fill="white"/>
+  <circle cx="110" cy="108" r="9" fill="none" stroke="#fde68a" stroke-width="1" opacity="0.8"/>
+  <ellipse cx="146" cy="108" rx="13" ry="13" fill="#e2e8f0"/>
+  <circle cx="146" cy="108" r="9" fill="#94a3b8"/>
+  <circle cx="146" cy="108" r="5" fill="#cbd5e1"/>
+  <circle cx="149" cy="105" r="3" fill="white"/>
+  <circle cx="146" cy="108" r="9" fill="none" stroke="#fde68a" stroke-width="1" opacity="0.8"/>
+  <!-- Eyelashes -->
+  <path d="M97 100 Q110 95 123 100" stroke="#cbd5e1" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M133 100 Q146 95 159 100" stroke="#cbd5e1" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Nose -->
+  <circle cx="128" cy="120" r="2.5" fill="#e2b98a"/>
+  <!-- Gentle smile -->
+  <path d="M115 133 Q128 142 141 133" stroke="#e2b98a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>
