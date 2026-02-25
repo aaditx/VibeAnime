@@ -60,8 +60,28 @@ export interface EpisodeSources {
  * @param title  The anime title to search
  * @param format The Anilist format (e.g., "TV", "MOVIE", "OVA", "SPECIAL") used to improve matching accuracy.
  */
+const MANUAL_MAPPING: Record<string, string> = {
+  // Map missing OVAs to "null" to fallback to megaplay instead of streaming the WRONG anime series
+  "the seven deadly sins ova": "null",
+  "nanatsu no taizai ova": "null",
+
+  // JJK Season 3 — AniList uses different title variants than HiAnime
+  "jujutsu kaisen season 3: the culling game part 1": "jujutsu-kaisen-the-culling-game-part-1-20401",
+  "jujutsu kaisen season 3": "jujutsu-kaisen-the-culling-game-part-1-20401",
+  "jujutsu kaisen: the culling game": "jujutsu-kaisen-the-culling-game-part-1-20401",
+  "jujutsu kaisen: the culling game part 1": "jujutsu-kaisen-the-culling-game-part-1-20401",
+  "jujutsu kaisen 3rd season": "jujutsu-kaisen-the-culling-game-part-1-20401",
+};
+
 export const searchHiAnimeId = unstable_cache(
   async (title: string, format: string | null = null): Promise<string | null> => {
+    // ── Pre-check: Manual overrides ──
+    const titleLowerStr = title.toLowerCase();
+    if (MANUAL_MAPPING[titleLowerStr] !== undefined) {
+      const mapped = MANUAL_MAPPING[titleLowerStr];
+      return mapped === "null" ? null : mapped;
+    }
+
 
     // Map Anilist format to HiAnime Type
     let hianimeType: string | null = null;
@@ -82,6 +102,14 @@ export const searchHiAnimeId = unstable_cache(
       if (hianimeType) {
         formatMatch = animes.find((a) => a.type?.toLowerCase() === hianimeType?.toLowerCase());
         if (formatMatch?.id) return formatMatch.id;
+      }
+
+      // If we were looking for a specific non-TV format and didn't find it,
+      // it's better to fail (and try fallback) than return a completely wrong TV show.
+      if (hianimeType && hianimeType !== "TV" && hianimeType !== "ONA") {
+        const anyMatch = animes.find((a) => a.name?.toLowerCase().includes(titleLower));
+        if (anyMatch?.id) return anyMatch.id;
+        return null;
       }
 
       const tvMatch = animes.find((a) => a.type === "TV");
