@@ -39,6 +39,22 @@ export async function GET(req: NextRequest) {
   try {
     const data = await fetchEpisodeSources(episodeId, server, category);
 
+    // If dub, fetch the "sub" category in parallel to extract its subtitles
+    if (category === "dub") {
+      try {
+        const subData = await fetchEpisodeSources(episodeId, server, "sub");
+        if (subData?.subtitles?.length) {
+          // Merge subtitles, avoiding duplicates by language just in case
+          const existingLangs = new Set((data.subtitles || []).map(s => s.lang));
+          const newSubs = subData.subtitles.filter(s => !existingLangs.has(s.lang));
+          data.subtitles = [...(data.subtitles || []), ...newSubs];
+        }
+      } catch (e) {
+        // Silently fail the sub fetch, we still want to return the dub stream
+        console.error("[/api/streaming/sources] Failed fetching sub subtitles for dub stream", e);
+      }
+    }
+
     // data.megaplayUrl is always set inside fetchEpisodeSources.
     // If HLS sources are also empty, additionally attach a freshly-fetched iframe.
     if (!data.sources || data.sources.length === 0) {
