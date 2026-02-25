@@ -248,67 +248,99 @@ export default function VideoPlayer({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="border border-[#1e1e1e] bg-black shadow-2xl">
-      {/* ── Toolbar ── */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#111] border-b border-[#1e1e1e] flex-wrap gap-y-1.5">
-        <MonitorPlay className="w-3.5 h-3.5 text-[#e8002d] flex-none" />
+    <div className="group relative w-full rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all hover:shadow-[0_0_50px_rgba(232,0,45,0.08)]">
 
-        <span className="text-[10px] text-[#555] font-black uppercase tracking-widest mr-0.5">Server:</span>
-        {(["hd-1", "hd-2"] as Server[]).map((s) => (
-          <button key={s} onClick={() => { if (s !== server) setServer(s); }}
-            className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 transition-colors ${server === s ? "bg-[#e8002d] text-white" : "bg-[#1a1a1a] border border-[#222] text-[#555] hover:text-white hover:border-[#e8002d]"}`}>
-            {SERVER_LABELS[s]}
-          </button>
-        ))}
+      {/* ── Top Toolbar (Glassmorphic & Auto-hiding) ── */}
+      <div className="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+        <MonitorPlay className="w-4 h-4 text-[#e8002d] flex-none drop-shadow-[0_0_8px_rgba(232,0,45,0.8)]" />
 
-        <div className="w-px h-4 bg-[#2a2a2a] mx-0.5" />
+        {/* Server Selector Pills */}
+        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10">
+          {(["hd-1", "hd-2"] as Server[]).map((s) => (
+            <button key={s} onClick={() => { if (s !== server) setServer(s); }}
+              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all duration-300 ${server === s ? "bg-[#e8002d] text-white shadow-[0_0_15px_rgba(232,0,45,0.4)]" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
+              {SERVER_LABELS[s]}
+            </button>
+          ))}
+        </div>
 
-        <span className="text-[10px] text-[#555] font-black uppercase tracking-widest mr-0.5">Lang:</span>
-        {(["sub", "dub"] as Category[]).map((c) => (
-          <button key={c} onClick={() => { if (c !== category) setCategory(c); }}
-            className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 transition-colors ${category === c ? "bg-[#e8002d] text-white" : "bg-[#1a1a1a] border border-[#222] text-[#555] hover:text-white hover:border-[#e8002d]"}`}>
-            {c}
-          </button>
-        ))}
+        <div className="w-px h-4 bg-white/10 mx-1" />
+
+        {/* Language Selector Pills */}
+        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10">
+          {(["sub", "dub"] as Category[]).map((c) => (
+            <button key={c} onClick={() => { if (c !== category) setCategory(c); }}
+              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all duration-300 ${category === c ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
+              {c}
+            </button>
+          ))}
+        </div>
 
         <div className="flex-1" />
 
         {useFallback && !hlsError && (
-          <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 border border-amber-500/30 px-2 py-0.5">Embed</span>
+          <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Embed
+          </span>
         )}
 
-        <button onClick={handleReload} title="Reload player" className="text-[#555] hover:text-white p-1 transition-colors">
-          <RefreshCw className="w-3.5 h-3.5" />
-        </button>
-        <button onClick={handleFullscreen} title="Fullscreen" className="text-[#555] hover:text-white p-1 transition-colors">
-          <Maximize2 className="w-3.5 h-3.5" />
-        </button>
+        {/* Actions */}
+        <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10">
+          <button onClick={handleReload} title="Reload player" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button onClick={handleFullscreen} title="Fullscreen" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all">
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* ── Player area ── */}
-      <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-        {/* No episode ID — indexing placeholder */}
+      <div className="relative w-full bg-[#050505]" style={{ aspectRatio: "16/9" }}>
+
+        {/* Unindexed / Placeholder State (Cinematic) */}
         {!hasSource && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d0f]"
-            style={coverImage ? { backgroundImage: `url(${coverImage})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}>
-            <div className="absolute inset-0 bg-black/75" />
-            <div className="relative flex flex-col items-center gap-3 text-center px-6 max-w-sm">
-              <Film className="w-10 h-10 text-white/30" />
-              <p className="text-white font-semibold text-base">{animeTitle}</p>
-              <p className="text-white/60 text-sm">Episode {episodeNumber}</p>
-              <p className="text-white/40 text-xs leading-relaxed">
-                This episode hasn&apos;t been indexed yet. Try reloading or check back in a moment.
+          <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden">
+            {coverImage && (
+              <>
+                <div
+                  className="absolute inset-0 bg-cover bg-center opacity-30 scale-110 blur-xl"
+                  style={{ backgroundImage: `url(${coverImage})` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-[#050505]/80" />
+              </>
+            )}
+            <div className="relative z-10 flex flex-col items-center gap-4 text-center px-6 max-w-md animate-fade-in-up">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center mb-2 shadow-2xl">
+                <Film className="w-8 h-8 text-[#e8002d]" />
+              </div>
+              <h2 className="text-white font-black text-2xl tracking-tight leading-tight" style={{ fontFamily: "var(--font-bebas)" }}>{animeTitle}</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-[#e8002d] text-xs font-black uppercase tracking-widest px-2.5 py-1 bg-[#e8002d]/10 rounded-full border border-[#e8002d]/20">Episode {episodeNumber}</span>
+              </div>
+              <p className="text-white/50 text-xs font-medium leading-relaxed mt-2 max-w-sm">
+                This episode hasn't been indexed by the streaming servers yet. Check back in a few hours or drop varying titles in the search.
               </p>
             </div>
           </div>
         )}
 
-        {/* Loading spinner */}
+        {/* Loading State (Premium Pulse) */}
         {hasSource && loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0d0d0f] z-10">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 text-[#e8002d] animate-spin" />
-              <p className="text-[#555] text-xs font-black uppercase tracking-widest">Loading stream…</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#050505] z-20">
+            {coverImage && (
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-10 scale-105 blur-2xl"
+                style={{ backgroundImage: `url(${coverImage})` }}
+              />
+            )}
+            <div className="relative flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#e8002d] rounded-full blur-xl opacity-20 animate-pulse" />
+                <Loader2 className="w-10 h-10 text-[#e8002d] animate-spin drop-shadow-[0_0_10px_rgba(232,0,45,0.5)]" />
+              </div>
+              <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Initializing Stream</p>
             </div>
           </div>
         )}
@@ -322,7 +354,7 @@ export default function VideoPlayer({
             title={`${animeTitle} Episode ${episodeNumber}`}
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowFullScreen
-            className="absolute inset-0 w-full h-full border-0"
+            className="absolute inset-0 w-full h-full border-0 bg-black z-10"
             sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-fullscreen"
           />
         )}
@@ -332,7 +364,7 @@ export default function VideoPlayer({
           <video
             ref={videoRef}
             key={`hls-${server}-${category}-${episodeNumber}-${reloadKey}`}
-            className="absolute inset-0 w-full h-full bg-black"
+            className="absolute inset-0 w-full h-full bg-black z-10"
             controls playsInline crossOrigin="anonymous"
           >
             {streamData?.subtitles
@@ -344,40 +376,52 @@ export default function VideoPlayer({
           </video>
         )}
 
-        {/* Auto-next episode overlay */}
+        {/* Premium Auto-Next Overlay */}
         {hasSource && !loading && !useFallback && showAutoNext && hasNextEp && (
-          <div className="absolute bottom-16 right-4 z-20 flex flex-col items-end gap-2 animate-fade-in">
+          <div className="absolute bottom-20 right-6 z-30 flex flex-col items-end gap-3 animate-slide-up-fade">
             <button
               onClick={dismissAutoNext}
-              className="text-[10px] text-[#555] hover:text-white uppercase tracking-widest transition-colors"
+              className="text-[10px] font-bold text-white/50 hover:text-white uppercase tracking-widest transition-colors drop-shadow-md"
             >
               Stay on this episode
             </button>
             <button
               onClick={() => router.push(nextEpUrl)}
-              className="flex items-center gap-2 bg-[#e8002d] hover:bg-[#c8001d] text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 transition-all hover:shadow-[0_0_20px_rgba(232,0,45,0.4)]"
+              className="group/btn relative flex items-center gap-3 bg-white/10 hover:bg-[#e8002d] backdrop-blur-xl border border-white/20 hover:border-[#e8002d] text-white p-1 pr-5 rounded-full transition-all duration-300 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_32px_rgba(232,0,45,0.4)]"
             >
-              <ChevronRight className="w-4 h-4" />
-              Next Episode
-              <span className="ml-1 bg-white/20 rounded px-1.5 py-0.5 text-[10px] tabular-nums">
-                {countdown}s
-              </span>
+              {/* Circular Progress Countdown */}
+              <div className="relative w-9 h-9 flex items-center justify-center bg-black/40 rounded-full flex-none">
+                <svg className="w-full h-full transform -rotate-90 absolute inset-0">
+                  <circle cx="18" cy="18" r="16" stroke="currentColor" strokeWidth="2" fill="none" className="text-white/10" />
+                  <circle cx="18" cy="18" r="16" stroke="currentColor" strokeWidth="2" fill="none"
+                    className="text-white transition-all duration-1000 ease-linear"
+                    strokeDasharray="100"
+                    strokeDashoffset={100 - (countdown / AUTO_NEXT_COUNTDOWN) * 100}
+                  />
+                </svg>
+                <span className="relative text-[10px] font-black font-mono tracking-tighter">{countdown}s</span>
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider relative z-10">Next Episode</span>
+              <ChevronRight className="w-4 h-4 text-white/50 group-hover/btn:text-white transition-colors relative z-10 translate-x-0 group-hover/btn:translate-x-1 duration-300" />
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Bottom bar ── */}
-      <div className="px-3 py-1.5 bg-[#16161a] border-t border-[#2a2a35] flex items-center justify-between text-[10px] text-[#8888aa]">
-        <span className="truncate">{animeTitle} — Episode {episodeNumber}</span>
-        <span className="flex-none ml-4 text-[#555566]">
+      {/* ── Bottom Info Bar ── */}
+      <div className="px-4 py-3 bg-[#080808] border-t border-white/5 flex items-center justify-between">
+        <div className="min-w-0 flex items-center gap-3">
+          {hlsError && <AlertTriangle className="w-4 h-4 text-amber-500 flex-none" />}
+          <span className="text-xs font-bold text-white/80 truncate">{animeTitle} <span className="text-white/40 ml-1 font-normal">| Episode {episodeNumber}</span></span>
+        </div>
+        <span className="flex-none ml-4 text-[10px] font-black uppercase tracking-widest text-[#e8002d]/70 hidden sm:block">
           {hlsError
-            ? "HLS failed — playing embed. Try another server."
+            ? "HLS failed · Playing embed"
             : useFallback
-              ? "Embed mode — switch server if video fails"
-              : "Switch server if buffering"}
+              ? "Embed mode active"
+              : "Vibe Stream"}
         </span>
       </div>
-    </div>
+    </div >
   );
 }
