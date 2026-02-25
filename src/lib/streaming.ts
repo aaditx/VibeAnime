@@ -65,12 +65,58 @@ const MANUAL_MAPPING: Record<string, string> = {
   "the seven deadly sins ova": "null",
   "nanatsu no taizai ova": "null",
 
-  // JJK Season 3 — AniList uses different title variants than HiAnime
+  // --------------------------------------------------------------------------
+  // HOTFIX MAPPINGS FOR POPULAR ANIME WHERE ANILIST AND HIANIME DISAGREE
+  // --------------------------------------------------------------------------
+
+  // Jujutsu Kaisen
   "jujutsu kaisen season 3: the culling game part 1": "jujutsu-kaisen-the-culling-game-part-1-20401",
   "jujutsu kaisen season 3": "jujutsu-kaisen-the-culling-game-part-1-20401",
   "jujutsu kaisen: the culling game": "jujutsu-kaisen-the-culling-game-part-1-20401",
   "jujutsu kaisen: the culling game part 1": "jujutsu-kaisen-the-culling-game-part-1-20401",
   "jujutsu kaisen 3rd season": "jujutsu-kaisen-the-culling-game-part-1-20401",
+  "jujutsu kaisen 2nd season": "jujutsu-kaisen-2nd-season-18413",
+  "jujutsu kaisen season 2": "jujutsu-kaisen-2nd-season-18413",
+
+  // Attack on Titan
+  "attack on titan final season the final chapters special 1": "attack-on-titan-the-final-season-part-3-18329",
+  "attack on titan final season the final chapters special 2": "attack-on-titan-the-final-season-part-4-18501",
+  "attack on titan: the final season - the final chapters special 1": "attack-on-titan-the-final-season-part-3-18329",
+  "attack on titan: the final season - the final chapters special 2": "attack-on-titan-the-final-season-part-4-18501",
+
+  // Demon Slayer
+  "demon slayer: kimetsu no yaiba hashira training arc": "demon-slayer-kimetsu-no-yaiba-hashira-training-arc-19107",
+  "demon slayer: kimetsu no yaiba swordsmith village arc": "demon-slayer-kimetsu-no-yaiba-swordsmith-village-arc-18056",
+  "demon slayer: kimetsu no yaiba entertainment district arc": "demon-slayer-kimetsu-no-yaiba-entertainment-district-arc-17688",
+  "demon slayer: kimetsu no yaiba mugen train arc": "demon-slayer-kimetsu-no-yaiba-mugen-train-arc-17687",
+
+  // My Hero Academia
+  "my hero academia season 7": "my-hero-academia-season-7-19146",
+  "my hero academia season 6": "my-hero-academia-season-6-18151",
+
+  // Bleach
+  "bleach: thousand-year blood war": "bleach-thousandyear-blood-war-18231",
+  "bleach: thousand-year blood war - the separation": "bleach-thousandyear-blood-war-the-separation-18448",
+  "bleach: thousand-year blood war - the conflict": "bleach-thousand-year-blood-war-part-3-the-conflict-19277",
+
+  // Mushoku Tensei
+  "mushoku tensei: jobless reincarnation season 2": "mushoku-tensei-jobless-reincarnation-season-2-18428",
+  "mushoku tensei: jobless reincarnation season 2 part 2": "mushoku-tensei-jobless-reincarnation-season-2-part-2-18868",
+
+  // Tokyo Revengers
+  "tokyo revengers: christmas showdown": "tokyo-revengers-christmas-showdown-18239",
+  "tokyo revengers: tenjiku arc": "tokyo-revengers-tenjiku-arc-18512",
+
+  // Spy x Family
+  "spy x family season 2": "spy-x-family-season-2-18507",
+  "spy x family part 2": "spy-x-family-part-2-18195",
+
+  // One Punch Man
+  "one punch man season 2": "one-punch-man-2-86",
+
+  // Kaguya-sama
+  "kaguya-sama: love is war -ultra romantic-": "kaguyasama-love-is-war-ultra-romantic-18029",
+  "kaguya-sama: love is war -the first kiss that never ends-": "kaguyasama-love-is-war-the-first-kiss-that-never-ends-18290",
 };
 
 export const searchHiAnimeId = unstable_cache(
