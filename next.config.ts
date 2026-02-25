@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["graphql-request", "mongodb", "aniwatch"],
 
   images: {
+    unoptimized: true, // Disables Vercel Image Optimization to save free-tier quotas (Transformations & Origin Transfer)
     // Serve modern formats (AVIF first, then WebP)
     formats: ["image/avif", "image/webp"],
     // Cache aggressively — anime cover art rarely changes
