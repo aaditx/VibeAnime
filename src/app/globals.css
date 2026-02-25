@@ -50,9 +50,11 @@ body {
 ::-webkit-scrollbar {
   width: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: #111;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--primary);
   border-radius: 0;
@@ -65,6 +67,7 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -77,6 +80,7 @@ body {
   font-family: var(--font-bebas), 'Space Grotesk', sans-serif;
   letter-spacing: 0.05em;
 }
+
 .logo-text-accent {
   color: var(--primary);
 }
@@ -98,6 +102,7 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -105,28 +110,51 @@ body {
 
 /* Ticker animation */
 @keyframes ticker {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* Blob float animation */
 @keyframes blob-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(20px, -15px) scale(1.05); }
-  66% { transform: translate(-10px, 10px) scale(0.97); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(20px, -15px) scale(1.05);
+  }
+
+  66% {
+    transform: translate(-10px, 10px) scale(0.97);
+  }
 }
+
 .blob-animate {
   animation: blob-float 8s ease-in-out infinite;
 }
+
 .blob-animate-delay {
   animation: blob-float 10s ease-in-out infinite 1.5s;
 }
 
 /* Shimmer skeleton */
 @keyframes shimmer {
-  0% { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
 }
+
 .skeleton {
   background: linear-gradient(90deg, #111 0%, #222 50%, #111 100%);
   background-size: 400px 100%;
@@ -135,17 +163,51 @@ body {
 
 /* Spinner */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
+
 .spinner {
   animation: spin 1s linear infinite;
 }
 
+
 /* Pulse glow */
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
+
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Hero fade-in */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-up {
+  animation: hero-fade-up 0.6s ease both;
+}
+
+/* Poster fan card */
+.poster-fan {
+  will-change: transform, opacity;
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPasswordResetToken } from "@/lib/userDb";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "fallback_key_for_build");
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://vibeanime.app";
 
 export async function POST(req: NextRequest) {
