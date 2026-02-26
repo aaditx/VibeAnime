@@ -99,6 +99,9 @@ export default function VideoPlayer({
         `?episodeId=${encodeURIComponent(hianimeEpisodeId!)}` +
         `&server=${server}&category=${category}`;
 
+      let isSuccess = false;
+      let hasSources = false;
+
       try {
         const r = await fetch(url);
         const data: StreamSources = await r.json();
@@ -114,8 +117,11 @@ export default function VideoPlayer({
           }
           setStreamData(data);
           setUseFallback(true);
+          isSuccess = true;
         } else {
           setStreamData(data);
+          hasSources = true;
+          isSuccess = true;
         }
       } catch (err) {
         if (!cancelled) {
@@ -130,7 +136,7 @@ export default function VideoPlayer({
       } finally {
         if (!cancelled && retryCount >= maxRetries) {
           setLoading(false);
-        } else if (!cancelled && streamData) {
+        } else if (!cancelled && (hasSources || useFallback)) {
           setLoading(false);
         }
       }
