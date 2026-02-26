@@ -157,6 +157,22 @@ export default function VideoPlayer({
   }, [streamData, hasNextEp, nextEpUrl, router, episodeNumber, hianimeEpisodeId]);
 
 
+  // ── Auto-fallback on proxy timeout (Netlify Port Blocking Bypass) ───────
+  useEffect(() => {
+    if (!hianimeEpisodeId || useFallback || !streamData?.sources?.find(s => s.isM3U8) || loading) return;
+
+    // Wait exactly 5 seconds for the player to initialize and fetch its first chunks
+    const timeout = setTimeout(() => {
+      const currentTime = playerRef.current?.getCurrentTime() || 0;
+      if (currentTime === 0) {
+        console.warn("[VideoPlayer] Stream proxy timed out or blocked by server firewall. Auto-falling back to iframe iframe.");
+        setUseFallback(true);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [streamData, useFallback, hianimeEpisodeId, loading]);
+
   // ── Auto-next countdown ───────────────────────────────────────────────────
   useEffect(() => {
     if (!showAutoNext) {
