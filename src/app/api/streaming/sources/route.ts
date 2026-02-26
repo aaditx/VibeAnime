@@ -39,15 +39,17 @@ export async function GET(req: NextRequest) {
   try {
     const data = await fetchEpisodeSources(episodeId, server, category);
 
+    let mergedSubtitles = data.subtitles || [];
+
     // If dub, fetch the "sub" category in parallel to extract its subtitles
     if (category === "dub") {
       try {
         const subData = await fetchEpisodeSources(episodeId, server, "sub");
         if (subData?.subtitles?.length) {
           // Merge subtitles, avoiding duplicates by language just in case
-          const existingLangs = new Set((data.subtitles || []).map(s => s.lang));
+          const existingLangs = new Set(mergedSubtitles.map(s => s.lang));
           const newSubs = subData.subtitles.filter(s => !existingLangs.has(s.lang));
-          data.subtitles = [...(data.subtitles || []), ...newSubs];
+          mergedSubtitles = [...mergedSubtitles, ...newSubs];
         }
       } catch (e) {
         // Silently fail the sub fetch, we still want to return the dub stream
@@ -55,18 +57,23 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const responseData = {
+      ...data,
+      subtitles: mergedSubtitles,
+    };
+
     // data.megaplayUrl is always set inside fetchEpisodeSources.
     // If HLS sources are also empty, additionally attach a freshly-fetched iframe.
-    if (!data.sources || data.sources.length === 0) {
+    if (!responseData.sources || responseData.sources.length === 0) {
       // fetchFallbackIframe now always returns non-null
       const fallbackIframe = await fetchFallbackIframe(episodeId, server, category);
       return NextResponse.json(
-        { ...data, fallbackIframe },
+        { ...responseData, fallbackIframe },
         { headers: { ...CORS, "Cache-Control": "private, max-age=1800" } }
       );
     }
 
-    return NextResponse.json(data, {
+    return NextResponse.json(responseData, {
       headers: { ...CORS, "Cache-Control": "private, max-age=1800" },
     });
   } catch (err) {
