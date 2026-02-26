@@ -246,55 +246,10 @@ export default function VideoPlayer({
   const hasSource = !!hianimeEpisodeId;
   const iframeUrl = useFallback ? guaranteedFallback() : null;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="group relative w-full rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all hover:shadow-[0_0_50px_rgba(232,0,45,0.08)]">
+    <div className="w-full rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all flex flex-col">
 
-      {/* ── Top Toolbar (Glassmorphic & Auto-hiding) ── */}
-      <div className="absolute top-0 left-0 right-0 z-40 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none hover:pointer-events-auto">
-        <MonitorPlay className="hidden sm:block w-4 h-4 text-[#e8002d] flex-none drop-shadow-[0_0_8px_rgba(232,0,45,0.8)]" />
 
-        {/* Server Selector Pills */}
-        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10 relative z-50">
-          {(["hd-1", "hd-2"] as Server[]).map((s) => (
-            <button key={s} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (s !== server) setServer(s); }}
-              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 pointer-events-auto ${server === s ? "bg-[#e8002d] text-white shadow-[0_0_15px_rgba(232,0,45,0.4)]" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
-              {SERVER_LABELS[s]}
-            </button>
-          ))}
-        </div>
-
-        <div className="w-px h-4 bg-white/10 mx-1" />
-
-        {/* Language Selector Pills */}
-        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10 relative z-50">
-          {(["sub", "dub"] as Category[]).map((c) => (
-            <button key={c} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (c !== category) setCategory(c); }}
-              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 pointer-events-auto ${category === c ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
-              {c}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1" />
-
-        {useFallback && !hlsError && (
-          <span className="hidden sm:flex text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full backdrop-blur-md items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            Embed
-          </span>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10 relative z-50">
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleReload(); }} title="Reload player" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all pointer-events-auto">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleFullscreen(); }} title="Fullscreen" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all pointer-events-auto">
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
 
       {/* ── Player area ── */}
       <div className="relative w-full bg-[#050505]" style={{ aspectRatio: "16/9" }}>
@@ -408,19 +363,60 @@ export default function VideoPlayer({
         )}
       </div>
 
-      {/* ── Bottom Info Bar ── */}
-      <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-[#080808] border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0">
-        <div className="min-w-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          {hlsError && <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-none" />}
-          <span className="text-[10px] sm:text-xs font-bold text-white/80 w-full truncate">{animeTitle} <span className="text-white/40 ml-1 font-normal">| Ep {episodeNumber}</span></span>
+      {/* ── Player Controls & Info (Below Player) ── */}
+      <div className="flex flex-col bg-[#080808] border-t border-white/5 relative z-20">
+
+        {/* Top row: Server & Language */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-4 py-3 border-b border-white/5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            {/* Server Selector */}
+            <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10">
+              {(["hd-1", "hd-2"] as Server[]).map((s) => (
+                <button key={s} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (s !== server) setServer(s); }}
+                  className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-md transition-all duration-300 ${server === s ? "bg-[#e8002d] text-white shadow-md shadow-[#e8002d]/20" : "text-white/50 hover:text-white hover:bg-white/10"}`}>
+                  {SERVER_LABELS[s]}
+                </button>
+              ))}
+            </div>
+
+            {/* Language Selector */}
+            <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10">
+              {(["sub", "dub"] as Category[]).map((c) => (
+                <button key={c} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (c !== category) setCategory(c); }}
+                  className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-md transition-all duration-300 ${category === c ? "bg-white text-black shadow-md shadow-white/20" : "text-white/50 hover:text-white hover:bg-white/10"}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleReload(); }} title="Reload player" className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all border border-transparent hover:border-white/10 bg-white/5">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleFullscreen(); }} title="Fullscreen" className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all border border-transparent hover:border-white/10 bg-white/5">
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <span className="flex-none ml-4 text-[10px] font-black uppercase tracking-widest text-[#e8002d]/70 hidden sm:block">
-          {hlsError
-            ? "HLS failed · Playing embed"
-            : useFallback
-              ? "Embed mode active"
-              : "Vibe Stream"}
-        </span>
+
+        {/* Bottom row: Info */}
+        <div className="px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0 bg-black/20">
+          <div className="min-w-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            {hlsError ? <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-none" /> : <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#e8002d] flex-none" />}
+            <span className="text-[10px] sm:text-xs font-bold text-white/80 w-full truncate">{animeTitle} <span className="text-white/40 ml-1 font-normal">| Ep {episodeNumber}</span></span>
+          </div>
+          <div className="flex items-center gap-3 mt-1 sm:mt-0">
+            {useFallback && !hlsError && (
+              <span className="flex text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-sm items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Embed
+              </span>
+            )}
+            <span className="flex-none text-[10px] font-black uppercase tracking-widest text-[#e8002d]/70 hidden sm:block">
+              {hlsError ? "HLS failed · Playing embed" : useFallback ? "Embed mode active" : "Vibe Stream"}
+            </span>
+          </div>
+        </div>
       </div>
     </div >
   );
