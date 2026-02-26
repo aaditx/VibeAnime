@@ -340,9 +340,14 @@ export default function VideoPlayer({
                   }
                 }}
                 onError={(e: any) => {
-                  console.warn("[ReactPlayer Error]", e);
-                  // Do not aggressively fallback to iframe on first HLS error.
-                  // hls.js will attempt to recover automatically.
+                  console.error("ReactPlayer HLS Error:", e);
+                  // Only fallback if the video completely failed to start (e.g., proxy blocked)
+                  // Mid-stream buffering errors will be ignored to let hls.js auto-recover
+                  const currentTime = playerRef.current?.getCurrentTime() || 0;
+                  if (currentTime === 0) {
+                    console.log("[VideoPlayer] Stream failed to initialize, switching to fallback iframe.");
+                    setUseFallback(true);
+                  }
                 }}
               />
             </div>
