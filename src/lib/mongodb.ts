@@ -5,6 +5,10 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
+// Module-scoped variables to hold the client and promise across hot reloads and serverless invocations
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+
 /**
  * Returns a connected MongoClient. The URI is read lazily so the module can
  * be imported at build time without MONGODB_URI being present in the env.
@@ -21,11 +25,17 @@ export async function getMongoClient(): Promise<MongoClient> {
   if (process.env.NODE_ENV === "development") {
     // In dev, reuse the global to survive hot-reloads
     if (!global._mongoClientPromise) {
-      global._mongoClientPromise = new MongoClient(uri).connect();
+      client = new MongoClient(uri);
+      global._mongoClientPromise = client.connect();
     }
-    return global._mongoClientPromise;
+    clientPromise = global._mongoClientPromise;
+  } else {
+    // In production, use the module-scoped variable so warm serverless functions reuse the connection pool
+    if (!clientPromise) {
+      client = new MongoClient(uri);
+      clientPromise = client.connect();
+    }
   }
 
-  // In production each module instance gets its own connection
-  return new MongoClient(uri).connect();
+  return clientPromise;
 }
