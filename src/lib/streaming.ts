@@ -279,9 +279,9 @@ async function tryScraperSources(
     if (sources.length > 0) {
       return {
         sources,
-        subtitles: (result.subtitles ?? [])
-          .filter((s) => s.lang && s.lang.toLowerCase() !== "thumbnails")
-          .map((s) => ({ url: s.url, lang: s.lang })),
+        subtitles: ((result as any).tracks ?? result.subtitles ?? [])
+          .filter((s: any) => s.lang && s.lang.toLowerCase() !== "thumbnails")
+          .map((s: any) => ({ url: s.url, lang: s.lang })),
         headers: (result.headers as Record<string, string>) ?? {},
       };
     }
@@ -314,7 +314,7 @@ async function tryApiSources(
     if (sources.length > 0) {
       return {
         sources,
-        subtitles: (data.subtitles ?? [])
+        subtitles: (data.tracks ?? data.subtitles ?? [])
           .filter((s: { lang?: string }) => s.lang && s.lang.toLowerCase() !== "thumbnails")
           .map((s: { url?: string; lang?: string }) => ({ url: s.url ?? "", lang: s.lang ?? "" })),
         headers: (data.headers as Record<string, string>) ?? {},
