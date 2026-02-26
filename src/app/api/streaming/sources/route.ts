@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
     const responseData = {
       ...data,
       subtitles: mergedSubtitles,
+      proxyBaseUrl: process.env.HIANIME_API_URL || "https://aniwatch-api.vercel.app"
     };
 
     // data.megaplayUrl is always set inside fetchEpisodeSources.
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
       ? `/embed-proxy/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`
       : fallbackIframe?.replace("https://megaplay.buzz", "/embed-proxy") ?? "";
     return NextResponse.json(
-      { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl },
+      { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl, proxyBaseUrl: process.env.HIANIME_API_URL || "https://aniwatch-api.vercel.app" },
       { status: 200, headers: CORS }
     );
   }
