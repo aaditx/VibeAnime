@@ -435,6 +435,18 @@ export default function VideoPlayer({
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Embed
               </span>
             )}
+            {!useFallback && hasSource && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setUseFallback(true);
+                }}
+                className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 sm:px-3 py-1 sm:py-1.5 rounded bg-white/10 hover:bg-amber-500/20 hover:text-amber-400 border border-transparent hover:border-amber-500/30 text-white transition-all cursor-pointer"
+              >
+                Force Embed
+              </button>
+            )}
             <span className="flex-none text-[10px] font-black uppercase tracking-widest text-[#e8002d]/70 hidden sm:block">
               {hlsError ? "HLS failed · Playing embed" : useFallback ? "Embed mode active" : "Vibe Stream"}
             </span>
