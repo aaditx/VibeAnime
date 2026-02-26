@@ -137,11 +137,21 @@ export default function VideoPlayer({
         manifestLoadingMaxRetry: 4,
         levelLoadingMaxRetry: 4,
         fragLoadingMaxRetry: 6,
+        renderTextTracksNatively: true, // Let browser natively handle text tracks
       });
       hlsRef.current = hls;
       hls.loadSource(proxied);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // Auto-enable first english track if available
+        const tracks = video.textTracks;
+        for (let i = 0; i < tracks.length; i++) {
+          if (tracks[i].label.toLowerCase().includes("english")) {
+            tracks[i].mode = "showing";
+            break;
+          }
+        }
+
         // Resume saved position
         const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
         if (saved) {
@@ -324,10 +334,13 @@ export default function VideoPlayer({
           >
             {streamData?.subtitles
               ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
-              .map((sub) => (
-                <track key={sub.url} kind="subtitles" src={sub.url}
-                  label={sub.lang} srcLang={sub.lang.slice(0, 2).toLowerCase()} />
-              ))}
+              .map((sub, i) => {
+                const isEng = sub.lang.toLowerCase().includes("english");
+                return (
+                  <track key={sub.url} kind="subtitles" src={sub.url}
+                    label={sub.lang} srcLang={sub.lang.slice(0, 2).toLowerCase()} default={isEng && i === 0} />
+                );
+              })}
           </video>
         )}
 
