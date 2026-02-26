@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Hls from "hls.js";
+import { Plyr, APITypes } from "plyr-react";
+import "plyr-react/plyr.css";
 import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
@@ -51,7 +53,7 @@ export default function VideoPlayer({
   totalEpisodes,
 }: VideoPlayerProps) {
   const router = useRouter();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const plyrRef = useRef<APITypes>(null);
   const hlsRef = useRef<Hls | null>(null);
 
   const [server, setServer] = useState<Server>("hd-1");
@@ -118,7 +120,9 @@ export default function VideoPlayer({
 
   // ── HLS setup ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const video = videoRef.current;
+    // Wait for plyr to yield the DOM element
+    // @ts-ignore - media property exists at runtime
+    const video = plyrRef.current?.plyr?.media as HTMLVideoElement | undefined;
     if (!video || !streamData || useFallback) return;
 
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
@@ -137,21 +141,12 @@ export default function VideoPlayer({
         manifestLoadingMaxRetry: 4,
         levelLoadingMaxRetry: 4,
         fragLoadingMaxRetry: 6,
-        renderTextTracksNatively: true, // Let browser natively handle text tracks
+        renderTextTracksNatively: false, // Let Plyr handle subtitles
       });
       hlsRef.current = hls;
       hls.loadSource(proxied);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        // Auto-enable first english track if available
-        const tracks = video.textTracks;
-        for (let i = 0; i < tracks.length; i++) {
-          if (tracks[i].label.toLowerCase().includes("english")) {
-            tracks[i].mode = "showing";
-            break;
-          }
-        }
-
         // Resume saved position
         const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
         if (saved) {
@@ -159,6 +154,10 @@ export default function VideoPlayer({
           if (!isNaN(t) && t > 5) video.currentTime = t;
         }
         video.play().catch(() => { });
+
+        // Ensure subtitles show up in plyr menu
+        // HLS parses subtitles and we pass them directly via Plymouth options or `<track>` children,
+        // but since we are using Plymouth with custom tracks array, plymouth will intercept them.
       });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (data.fatal) { setHlsError(true); setUseFallback(true); }
@@ -175,7 +174,8 @@ export default function VideoPlayer({
 
   // ── Save watch position + auto-next trigger ────────────────────────────────
   useEffect(() => {
-    const video = videoRef.current;
+    // @ts-ignore - media property exists at runtime
+    const video = plyrRef.current?.plyr?.media as HTMLVideoElement | undefined;
     if (!video) return;
 
     const onTimeUpdate = () => {
@@ -208,7 +208,7 @@ export default function VideoPlayer({
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("ended", onEnded);
     };
-  }, [animeId, episodeNumber, hasNextEp, nextEpUrl, router]);
+  }, [animeId, episodeNumber, hasNextEp, nextEpUrl, router, streamData]);
 
   // ── Auto-next countdown ───────────────────────────────────────────────────
   useEffect(() => {
@@ -237,7 +237,10 @@ export default function VideoPlayer({
   // const handleDownload = useCallback(() => { ... }, [...]);
 
   const handleFullscreen = useCallback(() => {
-    videoRef.current?.requestFullscreen();
+    // plyrRef is an APITypes which has `.plyr.fullscreen.enter()`
+    if (plyrRef.current && plyrRef.current.plyr) {
+      plyrRef.current.plyr.fullscreen.enter();
+    }
   }, []);
 
   const handleReload = useCallback(() => {
@@ -324,24 +327,38 @@ export default function VideoPlayer({
           />
         )}
 
-        {/* Native HLS video */}
+        {/* Plyr video */}
         {hasSource && !loading && !useFallback && (
-          <video
-            ref={videoRef}
-            key={`hls-${server}-${category}-${episodeNumber}-${reloadKey}`}
-            className="absolute inset-0 w-full h-full bg-black z-10"
-            controls playsInline crossOrigin="anonymous"
-          >
-            {streamData?.subtitles
-              ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
-              .map((sub, i) => {
-                const isEng = sub.lang.toLowerCase().includes("english");
-                return (
-                  <track key={sub.url} kind="subtitles" src={sub.url}
-                    label={sub.lang} srcLang={sub.lang.slice(0, 2).toLowerCase()} default={isEng && i === 0} />
-                );
-              })}
-          </video>
+          <div className="absolute inset-0 w-full h-full z-10 [&_.plyr]:h-full [&_.plyr__video-wrapper]:h-full">
+            <Plyr
+              ref={plyrRef}
+              source={{
+                type: 'video',
+                sources: [
+                  {
+                    src: streamData?.sources?.find((s) => s.isM3U8)?.url ?? "",
+                    type: 'application/x-mpegURL',
+                  }
+                ],
+                tracks: (streamData?.subtitles ?? [])
+                  .filter((s) => !s.url.toLowerCase().includes("thumbnail"))
+                  .map((sub, i) => ({
+                    kind: 'captions',
+                    label: sub.lang,
+                    srcLang: sub.lang.slice(0, 2).toLowerCase(),
+                    src: sub.url,
+                    default: sub.lang.toLowerCase().includes("english") && i === 0
+                  }))
+              }}
+              options={{
+                controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                settings: ['captions', 'quality', 'speed'],
+                captions: { active: true, update: true, language: 'en' },
+                tooltips: { controls: true, seek: true },
+                autoplay: true
+              }}
+            />
+          </div>
         )}
 
         {/* Premium Auto-Next Overlay */}
