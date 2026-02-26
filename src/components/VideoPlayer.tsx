@@ -6,11 +6,8 @@ import Hls from "hls.js";
 import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
-// Vidstack imports
-import '@vidstack/react/player/styles/default/theme.css';
-import '@vidstack/react/player/styles/default/layouts/video.css';
-import { MediaPlayer, MediaProvider, Track, type MediaPlayerInstance } from '@vidstack/react';
-import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
+import dynamic from 'next/dynamic';
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 // const DOWNLOADER_URL =
 //   process.env.NEXT_PUBLIC_DOWNLOADER_URL ?? "http://localhost:3001";
@@ -57,7 +54,7 @@ export default function VideoPlayer({
   totalEpisodes,
 }: VideoPlayerProps) {
   const router = useRouter();
-  const playerRef = useRef<MediaPlayerInstance>(null);
+  const playerRef = useRef<any>(null);
   const [server, setServer] = useState<Server>("hd-1");
   const [category, setCategory] = useState<Category>("sub");
   const [streamData, setStreamData] = useState<StreamSources | null>(null);
@@ -148,8 +145,9 @@ export default function VideoPlayer({
   // const handleDownload = useCallback(() => { ... }, [...]);
 
   const handleFullscreen = useCallback(() => {
-    if (playerRef.current) {
-      playerRef.current.enterFullscreen();
+    const el = playerRef.current?.getInternalPlayer() as HTMLVideoElement | undefined;
+    if (el && el.requestFullscreen) {
+      el.requestFullscreen();
     }
   }, []);
 
@@ -237,69 +235,79 @@ export default function VideoPlayer({
           />
         )}
 
-        {/* Vidstack Video Player */}
-        {hasSource && !loading && !useFallback && streamData?.sources?.find((s) => s.isM3U8) && (
-          <div className="absolute inset-0 w-full h-full z-10">
-            <MediaPlayer
-              ref={playerRef}
-              title={animeTitle}
-              src={`/api/streaming/proxy?url=${encodeURIComponent(streamData.sources.find(s => s.isM3U8)!.url)}&referer=https://hianime.to/`}
-              crossOrigin="anonymous"
-              playsInline
-              autoPlay
-              className="w-full h-full aspect-video bg-black rounded-lg overflow-hidden font-sans"
-              onTimeUpdate={(e: any) => {
-                const currentTime = e.currentTime || e.detail?.currentTime || 0;
-                const duration = playerRef.current?.state.duration || 0;
-
-                if (Math.round(currentTime) % 5 === 0 && currentTime > 5) {
-                  localStorage.setItem(STORAGE_KEY(animeId, episodeNumber), String(currentTime));
-                }
-
-                if (hasNextEp && duration > 0) {
-                  const remaining = duration - currentTime;
-                  if (remaining <= AUTO_NEXT_THRESHOLD && remaining > 0) {
-                    setShowAutoNext(true);
-                  } else {
-                    setShowAutoNext(false);
+        {/* ReactPlayer Video */}
+        {hasSource && !loading && !useFallback && streamData?.sources?.find((s) => s.isM3U8) && (() => {
+          const Player: any = ReactPlayer;
+          return (
+            <div className="absolute inset-0 w-full h-full z-10 bg-black">
+              {/* @ts-ignore */}
+              <Player
+                ref={playerRef}
+                url={`/api/streaming/proxy?url=${encodeURIComponent(streamData.sources.find(s => s.isM3U8)!.url)}&referer=https://hianime.to/`}
+                width="100%"
+                height="100%"
+                playing={true}
+                controls={true}
+                config={{
+                  file: {
+                    forceHLS: true,
+                    attributes: {
+                      crossOrigin: 'anonymous',
+                    },
+                    tracks: streamData?.subtitles
+                      ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
+                      .map((sub, i) => {
+                        const isEng = sub.lang.toLowerCase().includes("english");
+                        return {
+                          kind: 'subtitles',
+                          src: sub.url,
+                          srcLang: sub.lang.slice(0, 2).toLowerCase(),
+                          label: sub.lang,
+                          default: isEng && i === 0
+                        };
+                      }) || []
                   }
-                }
-              }}
-              onEnded={() => {
-                localStorage.removeItem(STORAGE_KEY(animeId, episodeNumber));
-                if (hasNextEp) {
-                  router.push(nextEpUrl);
-                }
-              }}
-              onCanPlay={() => {
-                const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
-                if (saved && playerRef.current) {
-                  const t = parseFloat(saved);
-                  if (!isNaN(t) && t > 5) playerRef.current.currentTime = t;
-                }
-              }}
-            >
-              <MediaProvider>
-                {streamData?.subtitles
-                  ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
-                  .map((sub, i) => {
-                    const isEng = sub.lang.toLowerCase().includes("english");
-                    return (
-                      <Track
-                        content={sub.url}
-                        kind="subtitles"
-                        label={sub.lang}
-                        lang={sub.lang.slice(0, 2).toLowerCase()}
-                        default={isEng && i === 0}
-                        key={sub.url}
-                      />
-                    );
-                  })}
-              </MediaProvider>
-              <DefaultVideoLayout icons={defaultLayoutIcons} />
-            </MediaPlayer>
-          </div>
-        )}
+                } as any}
+                onProgress={(state: any) => {
+                  const currentTime = state.playedSeconds;
+                  const duration = playerRef.current?.getDuration() || 0;
+
+                  if (Math.round(currentTime) % 5 === 0 && currentTime > 5) {
+                    localStorage.setItem(STORAGE_KEY(animeId, episodeNumber), String(currentTime));
+                  }
+
+                  if (hasNextEp && duration > 0) {
+                    const remaining = duration - currentTime;
+                    if (remaining <= AUTO_NEXT_THRESHOLD && remaining > 0) {
+                      setShowAutoNext(true);
+                    } else {
+                      setShowAutoNext(false);
+                    }
+                  }
+                }}
+                onEnded={() => {
+                  localStorage.removeItem(STORAGE_KEY(animeId, episodeNumber));
+                  if (hasNextEp) {
+                    router.push(nextEpUrl);
+                  }
+                }}
+                onReady={() => {
+                  const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
+                  if (saved && playerRef.current) {
+                    const t = parseFloat(saved);
+                    if (!isNaN(t) && t > 5) {
+                      playerRef.current.seekTo(t, 'seconds');
+                    }
+                  }
+                }}
+                onError={() => {
+                  setHlsError(true);
+                  setUseFallback(true);
+                }}
+              />
+            </div>
+          );
+        })()}
 
         {/* Premium Auto-Next Overlay */}
         {hasSource && !loading && !useFallback && showAutoNext && hasNextEp && (
