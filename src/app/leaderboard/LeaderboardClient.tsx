@@ -48,7 +48,7 @@ export default function LeaderboardClient({ entries, currentUserId, badgeTiers }
                 {/* Header */}
                 <div className="mb-10 text-center">
                     <p className="text-[10px] font-black text-[#e8002d] uppercase tracking-widest mb-2">Global</p>
-                    <h1 className="text-4xl sm:text-5xl font-black text-white uppercase tracking-tighter">
+                    <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tighter">
                         Leaderboard
                     </h1>
                     <p className="text-sm text-[#555] mt-3 max-w-sm mx-auto">
@@ -87,7 +87,7 @@ export default function LeaderboardClient({ entries, currentUserId, badgeTiers }
 
                 {/* Full table */}
                 <div className="border border-[#1e1e1e] bg-[#0f0f0f] overflow-hidden">
-                    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-4 px-4 py-2 border-b border-[#1a1a1a] text-[9px] font-black text-[#555] uppercase tracking-widest">
+                    <div className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] gap-x-3 sm:gap-x-4 px-3 sm:px-4 py-2 border-b border-[#1a1a1a] text-[9px] font-black text-[#555] uppercase tracking-widest">
                         <span>#</span>
                         <span>Player</span>
                         <span className="text-right">Anime</span>
@@ -108,7 +108,7 @@ export default function LeaderboardClient({ entries, currentUserId, badgeTiers }
                         return (
                             <div
                                 key={entry.userId}
-                                className={`grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-4 items-center px-4 py-3 border-b border-[#111] hover:bg-white/[0.02] transition-colors ${isMe ? "bg-[#e8002d]/5 border-l-2 border-l-[#e8002d]" : ""
+                                className={`grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] gap-x-3 sm:gap-x-4 items-center px-3 sm:px-4 py-3 border-b border-[#111] hover:bg-white/[0.02] transition-colors ${isMe ? "bg-[#e8002d]/5 border-l-2 border-l-[#e8002d]" : ""
                                     }`}
                             >
                                 {/* Rank */}
@@ -131,19 +131,19 @@ export default function LeaderboardClient({ entries, currentUserId, badgeTiers }
                                 </div>
 
                                 {/* Anime count */}
-                                <div className="flex items-center gap-1 text-xs font-bold text-[#888]">
+                                <div className="flex items-center gap-1 text-xs font-bold text-[#888] justify-end">
                                     <Tv2 className="w-3 h-3 text-[#555]" />
                                     {entry.uniqueAnimeWatched}
                                 </div>
 
                                 {/* Streak */}
-                                <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-[#888]">
+                                <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-[#888] justify-end">
                                     <Flame className="w-3 h-3 text-[#555]" />
                                     {entry.loginStreak}d
                                 </div>
 
                                 {/* Points */}
-                                <div className="flex items-center gap-1 text-xs font-black text-white">
+                                <div className="flex items-center gap-1 text-xs font-black text-white justify-end">
                                     <Zap className="w-3 h-3 text-[#e8002d]" />
                                     {entry.totalPoints.toLocaleString()}
                                 </div>

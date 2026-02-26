@@ -251,14 +251,14 @@ export default function VideoPlayer({
     <div className="group relative w-full rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all hover:shadow-[0_0_50px_rgba(232,0,45,0.08)]">
 
       {/* ── Top Toolbar (Glassmorphic & Auto-hiding) ── */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <MonitorPlay className="w-4 h-4 text-[#e8002d] flex-none drop-shadow-[0_0_8px_rgba(232,0,45,0.8)]" />
+      <div className="absolute top-0 left-0 right-0 z-30 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+        <MonitorPlay className="hidden sm:block w-4 h-4 text-[#e8002d] flex-none drop-shadow-[0_0_8px_rgba(232,0,45,0.8)]" />
 
         {/* Server Selector Pills */}
         <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10">
           {(["hd-1", "hd-2"] as Server[]).map((s) => (
             <button key={s} onClick={() => { if (s !== server) setServer(s); }}
-              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all duration-300 ${server === s ? "bg-[#e8002d] text-white shadow-[0_0_15px_rgba(232,0,45,0.4)]" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
+              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 ${server === s ? "bg-[#e8002d] text-white shadow-[0_0_15px_rgba(232,0,45,0.4)]" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
               {SERVER_LABELS[s]}
             </button>
           ))}
@@ -270,7 +270,7 @@ export default function VideoPlayer({
         <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10">
           {(["sub", "dub"] as Category[]).map((c) => (
             <button key={c} onClick={() => { if (c !== category) setCategory(c); }}
-              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all duration-300 ${category === c ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
+              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 ${category === c ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
               {c}
             </button>
           ))}
@@ -279,7 +279,7 @@ export default function VideoPlayer({
         <div className="flex-1" />
 
         {useFallback && !hlsError && (
-          <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1.5">
+          <span className="hidden sm:flex text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full backdrop-blur-md items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             Embed
           </span>
@@ -378,7 +378,7 @@ export default function VideoPlayer({
 
         {/* Premium Auto-Next Overlay */}
         {hasSource && !loading && !useFallback && showAutoNext && hasNextEp && (
-          <div className="absolute bottom-20 right-6 z-30 flex flex-col items-end gap-3 animate-slide-up-fade">
+          <div className="absolute bottom-16 sm:bottom-20 right-4 sm:right-6 z-30 flex flex-col items-end gap-2 sm:gap-3 animate-slide-up-fade">
             <button
               onClick={dismissAutoNext}
               className="text-[10px] font-bold text-white/50 hover:text-white uppercase tracking-widest transition-colors drop-shadow-md"
@@ -409,10 +409,10 @@ export default function VideoPlayer({
       </div>
 
       {/* ── Bottom Info Bar ── */}
-      <div className="px-4 py-3 bg-[#080808] border-t border-white/5 flex items-center justify-between">
-        <div className="min-w-0 flex items-center gap-3">
-          {hlsError && <AlertTriangle className="w-4 h-4 text-amber-500 flex-none" />}
-          <span className="text-xs font-bold text-white/80 truncate">{animeTitle} <span className="text-white/40 ml-1 font-normal">| Episode {episodeNumber}</span></span>
+      <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-[#080808] border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0">
+        <div className="min-w-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {hlsError && <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-none" />}
+          <span className="text-[10px] sm:text-xs font-bold text-white/80 w-full truncate">{animeTitle} <span className="text-white/40 ml-1 font-normal">| Ep {episodeNumber}</span></span>
         </div>
         <span className="flex-none ml-4 text-[10px] font-black uppercase tracking-widest text-[#e8002d]/70 hidden sm:block">
           {hlsError

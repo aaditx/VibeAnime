@@ -94,8 +94,8 @@ export default function HeroSection({ animes }: HeroSectionProps) {
         <div className="h-14 flex-none" />
 
         {/* Main centered area */}
-        <div className="flex-1 flex items-center">
-          <div className="w-full max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between gap-10" style={{ marginTop: "-20px" }}>
+        <div className="flex-1 flex items-center mt-10 sm:mt-0">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-6 sm:gap-10">
 
             {/* ─── LEFT ─── */}
             <div className="flex-1 max-w-[560px] flex flex-col gap-7">
@@ -104,7 +104,7 @@ export default function HeroSection({ animes }: HeroSectionProps) {
               <div className="flex flex-col gap-1.5">
                 <Link href="/" className="group inline-block">
                   <span
-                    className="text-[4rem] leading-none font-black tracking-tight"
+                    className="text-[3rem] sm:text-[4rem] leading-none font-black tracking-tight"
                     style={{ fontFamily: "var(--font-bebas, 'Space Grotesk', sans-serif)" }}
                   >
                     <span className="text-white">Vibe</span>
@@ -117,7 +117,7 @@ export default function HeroSection({ animes }: HeroSectionProps) {
               </div>
 
               {/* Search */}
-              <form onSubmit={handleSearch} className="flex h-13 shadow-xl shadow-black/50">
+              <form onSubmit={handleSearch} className="flex h-12 sm:h-13 shadow-xl shadow-black/50">
                 <input
                   type="text"
                   value={query}
@@ -162,20 +162,20 @@ export default function HeroSection({ animes }: HeroSectionProps) {
               </div>
 
               {/* CTAs */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Link
                   href="/home"
-                  className="inline-flex items-center gap-2 bg-[#e8002d] hover:bg-[#c8001d] text-white font-bold px-7 py-3 rounded-lg text-sm transition-all shadow-lg shadow-[#e8002d]/30 hover:shadow-[#e8002d]/50 group"
+                  className="inline-flex items-center justify-center gap-2 bg-[#e8002d] hover:bg-[#c8001d] text-white font-bold px-7 py-3 rounded-lg text-sm transition-all shadow-lg shadow-[#e8002d]/30 hover:shadow-[#e8002d]/50 group"
                 >
                   Watch Anime
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
                 <Link
                   href={`/anime/${anime.id}/watch/1`}
-                  className="inline-flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 hover:border-white/30 text-white/80 hover:text-white font-medium px-5 py-3 rounded-lg text-sm transition-all backdrop-blur-sm"
+                  className="inline-flex items-center justify-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 hover:border-white/30 text-white/80 hover:text-white font-medium px-5 py-3 rounded-lg text-sm transition-all backdrop-blur-sm"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span className="max-w-[130px] truncate">{getAnimeTitle(anime.title)}</span>
+                  <span className="max-w-[200px] sm:max-w-[130px] truncate">{getAnimeTitle(anime.title)}</span>
                 </Link>
               </div>
 
