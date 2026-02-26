@@ -299,7 +299,7 @@ export default function VideoPlayer({
               {/* @ts-ignore */}
               <Player
                 ref={playerRef}
-                url={`${streamData.proxyBaseUrl || "https://aniwatch-api.vercel.app"}/api/v2/hianime/proxy/cors?url=${encodeURIComponent(streamData.sources.find(s => s.isM3U8)!.url)}&referer=${encodeURIComponent(streamData.headers?.Referer || "https://hianime.to/")}`}
+                url={`/api/streaming/proxy?url=${encodeURIComponent(streamData.sources.find(s => s.isM3U8)!.url)}&referer=${encodeURIComponent(streamData.headers?.Referer || "https://hianime.to/")}`}
                 width="100%"
                 height="100%"
                 playing={true}
