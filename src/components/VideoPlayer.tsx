@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Hls from "hls.js";
-// @ts-ignore - plyr doesn't have default export in types but works
-import Plyr from "plyr";
-import "plyr/dist/plyr.css";
 import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
+
+// Vidstack imports
+import '@vidstack/react/player/styles/default/theme.css';
+import '@vidstack/react/player/styles/default/layouts/video.css';
+import { MediaPlayer, MediaProvider, Track, type MediaPlayerInstance } from '@vidstack/react';
+import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
 
 // const DOWNLOADER_URL =
 //   process.env.NEXT_PUBLIC_DOWNLOADER_URL ?? "http://localhost:3001";
@@ -54,10 +57,7 @@ export default function VideoPlayer({
   totalEpisodes,
 }: VideoPlayerProps) {
   const router = useRouter();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const plyrRef = useRef<Plyr | null>(null);
-  const hlsRef = useRef<Hls | null>(null);
-
+  const playerRef = useRef<MediaPlayerInstance>(null);
   const [server, setServer] = useState<Server>("hd-1");
   const [category, setCategory] = useState<Category>("sub");
   const [streamData, setStreamData] = useState<StreamSources | null>(null);
@@ -120,111 +120,6 @@ export default function VideoPlayer({
     router.prefetch(nextEpUrl);
   }, [streamData, hasNextEp, nextEpUrl, router, episodeNumber, hianimeEpisodeId]);
 
-  // ── HLS setup ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !streamData || useFallback) return;
-
-    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-    if (plyrRef.current) { plyrRef.current.destroy(); plyrRef.current = null; }
-
-    const m3u8 = streamData.sources?.find((s) => s.isM3U8) ?? streamData.sources?.[0];
-    if (!m3u8) { setUseFallback(true); return; }
-
-    const referer = streamData.headers?.Referer || "https://hianime.to/";
-    const proxied = `/api/streaming/proxy?url=${encodeURIComponent(m3u8.url)}&referer=${encodeURIComponent(referer)}`;
-
-    // Initialize Plyr directly on the video element
-    const player = new Plyr(video, {
-      controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
-      settings: ['captions', 'quality', 'speed'],
-      captions: { active: true, update: true, language: 'en' },
-      tooltips: { controls: true, seek: true },
-      autoplay: true
-    });
-    plyrRef.current = player;
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        backBufferLength: 90,
-        maxBufferLength: 60,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingMaxRetry: 4,
-        fragLoadingMaxRetry: 6,
-        renderTextTracksNatively: false, // Let Plyr handle subtitles
-      });
-      hlsRef.current = hls;
-      hls.loadSource(proxied);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        // Resume saved position
-        const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
-        if (saved) {
-          const t = parseFloat(saved);
-          if (!isNaN(t) && t > 5) video.currentTime = t;
-        }
-        const playResult = player.play() as unknown as Promise<void> | void;
-        if (playResult !== undefined && playResult.catch) {
-          playResult.catch(() => { });
-        }
-
-        player.once('ready', () => {
-          player.toggleCaptions(true);
-        });
-      });
-      hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (data.fatal) { setHlsError(true); setUseFallback(true); }
-      });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = proxied;
-      video.load();
-    } else {
-      setUseFallback(true);
-    }
-
-    return () => {
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-      if (plyrRef.current) { plyrRef.current.destroy(); plyrRef.current = null; }
-    };
-  }, [streamData, useFallback, animeId, episodeNumber]);
-
-  // ── Save watch position + auto-next trigger ────────────────────────────────
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const onTimeUpdate = () => {
-      // Save position every ~5 seconds
-      if (Math.round(video.currentTime) % 5 === 0 && video.currentTime > 5) {
-        localStorage.setItem(STORAGE_KEY(animeId, episodeNumber), String(video.currentTime));
-      }
-      // Show auto-next overlay near end
-      if (hasNextEp && video.duration > 0) {
-        const remaining = video.duration - video.currentTime;
-        if (remaining <= AUTO_NEXT_THRESHOLD && remaining > 0) {
-          setShowAutoNext(true);
-        } else {
-          setShowAutoNext(false);
-        }
-      }
-    };
-
-    const onEnded = () => {
-      // Clear saved position on episode completion
-      localStorage.removeItem(STORAGE_KEY(animeId, episodeNumber));
-      if (hasNextEp) {
-        router.push(nextEpUrl);
-      }
-    };
-
-    video.addEventListener("timeupdate", onTimeUpdate);
-    video.addEventListener("ended", onEnded);
-    return () => {
-      video.removeEventListener("timeupdate", onTimeUpdate);
-      video.removeEventListener("ended", onEnded);
-    };
-  }, [animeId, episodeNumber, hasNextEp, nextEpUrl, router, streamData]);
 
   // ── Auto-next countdown ───────────────────────────────────────────────────
   useEffect(() => {
@@ -253,8 +148,8 @@ export default function VideoPlayer({
   // const handleDownload = useCallback(() => { ... }, [...]);
 
   const handleFullscreen = useCallback(() => {
-    if (plyrRef.current) {
-      plyrRef.current.fullscreen.enter();
+    if (playerRef.current) {
+      playerRef.current.enterFullscreen();
     }
   }, []);
 
@@ -342,26 +237,67 @@ export default function VideoPlayer({
           />
         )}
 
-        {/* Plyr & Native HLS video */}
-        {hasSource && !loading && !useFallback && (
-          <div className="absolute inset-0 w-full h-full z-10 [&_.plyr]:h-full [&_.plyr__video-wrapper]:h-full">
-            <video
-              ref={videoRef}
-              key={`hls-${server}-${category}-${episodeNumber}-${reloadKey}`}
-              className="w-full h-full"
+        {/* Vidstack Video Player */}
+        {hasSource && !loading && !useFallback && streamData?.sources?.find((s) => s.isM3U8) && (
+          <div className="absolute inset-0 w-full h-full z-10">
+            <MediaPlayer
+              ref={playerRef}
+              title={animeTitle}
+              src={`/api/streaming/proxy?url=${encodeURIComponent(streamData.sources.find(s => s.isM3U8)!.url)}&referer=https://hianime.to/`}
               crossOrigin="anonymous"
               playsInline
+              autoPlay
+              className="w-full h-full aspect-video bg-black rounded-lg overflow-hidden font-sans"
+              onTimeUpdate={(e: any) => {
+                const currentTime = e.currentTime || e.detail?.currentTime || 0;
+                const duration = playerRef.current?.state.duration || 0;
+
+                if (Math.round(currentTime) % 5 === 0 && currentTime > 5) {
+                  localStorage.setItem(STORAGE_KEY(animeId, episodeNumber), String(currentTime));
+                }
+
+                if (hasNextEp && duration > 0) {
+                  const remaining = duration - currentTime;
+                  if (remaining <= AUTO_NEXT_THRESHOLD && remaining > 0) {
+                    setShowAutoNext(true);
+                  } else {
+                    setShowAutoNext(false);
+                  }
+                }
+              }}
+              onEnded={() => {
+                localStorage.removeItem(STORAGE_KEY(animeId, episodeNumber));
+                if (hasNextEp) {
+                  router.push(nextEpUrl);
+                }
+              }}
+              onCanPlay={() => {
+                const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
+                if (saved && playerRef.current) {
+                  const t = parseFloat(saved);
+                  if (!isNaN(t) && t > 5) playerRef.current.currentTime = t;
+                }
+              }}
             >
-              {streamData?.subtitles
-                ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
-                .map((sub, i) => {
-                  const isEng = sub.lang.toLowerCase().includes("english");
-                  return (
-                    <track key={sub.url} kind="captions" src={sub.url}
-                      label={sub.lang} srcLang={sub.lang.slice(0, 2).toLowerCase()} default={isEng && i === 0} />
-                  );
-                })}
-            </video>
+              <MediaProvider>
+                {streamData?.subtitles
+                  ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
+                  .map((sub, i) => {
+                    const isEng = sub.lang.toLowerCase().includes("english");
+                    return (
+                      <Track
+                        content={sub.url}
+                        kind="subtitles"
+                        label={sub.lang}
+                        lang={sub.lang.slice(0, 2).toLowerCase()}
+                        default={isEng && i === 0}
+                        key={sub.url}
+                      />
+                    );
+                  })}
+              </MediaProvider>
+              <DefaultVideoLayout icons={defaultLayoutIcons} />
+            </MediaPlayer>
           </div>
         )}
 
