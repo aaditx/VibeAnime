@@ -251,14 +251,14 @@ export default function VideoPlayer({
     <div className="group relative w-full rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all hover:shadow-[0_0_50px_rgba(232,0,45,0.08)]">
 
       {/* ── Top Toolbar (Glassmorphic & Auto-hiding) ── */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+      <div className="absolute top-0 left-0 right-0 z-40 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none hover:pointer-events-auto">
         <MonitorPlay className="hidden sm:block w-4 h-4 text-[#e8002d] flex-none drop-shadow-[0_0_8px_rgba(232,0,45,0.8)]" />
 
         {/* Server Selector Pills */}
-        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10">
+        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10 relative z-50">
           {(["hd-1", "hd-2"] as Server[]).map((s) => (
-            <button key={s} onClick={() => { if (s !== server) setServer(s); }}
-              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 ${server === s ? "bg-[#e8002d] text-white shadow-[0_0_15px_rgba(232,0,45,0.4)]" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
+            <button key={s} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (s !== server) setServer(s); }}
+              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 pointer-events-auto ${server === s ? "bg-[#e8002d] text-white shadow-[0_0_15px_rgba(232,0,45,0.4)]" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
               {SERVER_LABELS[s]}
             </button>
           ))}
@@ -267,10 +267,10 @@ export default function VideoPlayer({
         <div className="w-px h-4 bg-white/10 mx-1" />
 
         {/* Language Selector Pills */}
-        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10">
+        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-0.5 border border-white/10 relative z-50">
           {(["sub", "dub"] as Category[]).map((c) => (
-            <button key={c} onClick={() => { if (c !== category) setCategory(c); }}
-              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 ${category === c ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
+            <button key={c} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (c !== category) setCategory(c); }}
+              className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 pointer-events-auto ${category === c ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
               {c}
             </button>
           ))}
@@ -286,11 +286,11 @@ export default function VideoPlayer({
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10">
-          <button onClick={handleReload} title="Reload player" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all">
+        <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10 relative z-50">
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleReload(); }} title="Reload player" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all pointer-events-auto">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <button onClick={handleFullscreen} title="Fullscreen" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all">
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleFullscreen(); }} title="Fullscreen" className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all pointer-events-auto">
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
