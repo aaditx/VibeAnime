@@ -84,26 +84,59 @@ export default function VideoPlayer({
   useEffect(() => {
     if (!hianimeEpisodeId) return;
     let cancelled = false;
-    setLoading(true);
-    setStreamData(null);
-    setUseFallback(false);
-    setHlsError(false);
-    setShowAutoNext(false);
+    let retryCount = 0;
+    const maxRetries = 2;
 
-    const url =
-      `/api/streaming/sources` +
-      `?episodeId=${encodeURIComponent(hianimeEpisodeId)}` +
-      `&server=${server}&category=${category}`;
+    const fetchSources = async () => {
+      setLoading(true);
+      setStreamData(null);
+      setUseFallback(false);
+      setHlsError(false);
+      setShowAutoNext(false);
 
-    fetch(url)
-      .then((r) => r.json())
-      .then((data: StreamSources) => {
+      const url =
+        `/api/streaming/sources` +
+        `?episodeId=${encodeURIComponent(hianimeEpisodeId!)}` +
+        `&server=${server}&category=${category}`;
+
+      try {
+        const r = await fetch(url);
+        const data: StreamSources = await r.json();
+
         if (cancelled) return;
-        setStreamData(data);
-        if (!data.sources || data.sources.length === 0) setUseFallback(true);
-      })
-      .catch(() => { if (!cancelled) setUseFallback(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+
+        if (!data.sources || data.sources.length === 0) {
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`[VideoPlayer] Empty sources, retrying (${retryCount}/${maxRetries})...`);
+            setTimeout(fetchSources, 1500);
+            return;
+          }
+          setStreamData(data);
+          setUseFallback(true);
+        } else {
+          setStreamData(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`[VideoPlayer] Fetch failed, retrying (${retryCount}/${maxRetries})...`);
+            setTimeout(fetchSources, 1500);
+            return;
+          }
+          setUseFallback(true);
+        }
+      } finally {
+        if (!cancelled && retryCount >= maxRetries) {
+          setLoading(false);
+        } else if (!cancelled && streamData) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSources();
 
     return () => { cancelled = true; };
   }, [hianimeEpisodeId, server, category, reloadKey]);
@@ -300,9 +333,10 @@ export default function VideoPlayer({
                     }
                   }
                 }}
-                onError={() => {
-                  setHlsError(true);
-                  setUseFallback(true);
+                onError={(e: any) => {
+                  console.warn("[ReactPlayer Error]", e);
+                  // Do not aggressively fallback to iframe on first HLS error.
+                  // hls.js will attempt to recover automatically.
                 }}
               />
             </div>
