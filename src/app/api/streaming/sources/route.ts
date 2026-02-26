@@ -83,8 +83,8 @@ export async function GET(req: NextRequest) {
     // Build megaplay URL from the numeric ep ID in episodeId
     const epNumericId = episodeId.match(/ep=(\d+)/)?.[1];
     const megaplayUrl = epNumericId
-      ? `https://megaplay.buzz/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`
-      : fallbackIframe ?? "";
+      ? `/embed-proxy/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`
+      : fallbackIframe?.replace("https://megaplay.buzz", "/embed-proxy") ?? "";
     return NextResponse.json(
       { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl },
       { status: 200, headers: CORS }

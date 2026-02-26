@@ -16,5 +16,5 @@ export function extractHiAnimeEpId(hianimeEpisodeId: string): string | null {
  * Build a megaplay.buzz embed URL — fallback iframe when HLS is unavailable.
  */
 export function buildMegaplayUrl(epId: string, isDub = false): string {
-    return `https://megaplay.buzz/stream/s-2/${epId}/${isDub ? "dub" : "sub"}`;
+    return `/embed-proxy/stream/s-2/${epId}/${isDub ? "dub" : "sub"}`;
 }

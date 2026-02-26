@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
   // Reduce source map size in dev for faster HMR
   productionBrowserSourceMaps: false,
 
+  // Soft reverse proxy for Megaplay iframes to bypass Cross-Origin blocks
+  async rewrites() {
+    return [
+      {
+        source: "/embed-proxy/:path*",
+        destination: "https://megaplay.buzz/:path*",
+      },
+    ];
+  },
+
   // Allow the download site to call our streaming API cross-origin
   async headers() {
     return [
