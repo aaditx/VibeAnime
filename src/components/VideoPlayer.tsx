@@ -63,6 +63,7 @@ export default function VideoPlayer({
   const [useFallback, setUseFallback] = useState(false);
   const [hlsError, setHlsError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   // Auto-play next episode
   const [showAutoNext, setShowAutoNext] = useState(false);
@@ -158,21 +159,28 @@ export default function VideoPlayer({
   }, [streamData, hasNextEp, nextEpUrl, router, episodeNumber, hianimeEpisodeId]);
 
 
-  // ── Auto-fallback on proxy timeout (Netlify Port Blocking Bypass) ───────
+  // ── Ultimate Watchdog Timer (Netlify Firewall Auto-Bypass) ──────────────
   useEffect(() => {
+    // If we're not using fallback, and we actually have stream data, start the watchdog
     if (!hianimeEpisodeId || useFallback || !streamData?.sources?.find(s => s.isM3U8) || loading) return;
 
-    // Wait exactly 5 seconds for the player to initialize and fetch its first chunks
-    const timeout = setTimeout(() => {
-      const currentTime = playerRef.current?.getCurrentTime() || 0;
-      if (currentTime === 0) {
-        console.warn("[VideoPlayer] Stream proxy timed out or blocked by server firewall. Auto-falling back to iframe iframe.");
+    // A strict 8-second global timeout. If the video hasn't passed 0:00 by 8 seconds, 
+    // it's definitively blocked by a network proxy rule. Fallback immediately.
+    const watchdog = setTimeout(() => {
+      try {
+        const p = playerRef.current;
+        // If player is dead, or stuck precisely at 0:00 (hasn't played a single frame)
+        if (!p || !p.getCurrentTime || p.getCurrentTime() <= 0.1) {
+          console.error("[VideoPlayer Watchdog] Player frozen at 0:00. Netlify firewall likely dropped the chunks. Forcing embed override...");
+          setUseFallback(true);
+        }
+      } catch (err) {
         setUseFallback(true);
       }
-    }, 5000);
+    }, 8000);
 
-    return () => clearTimeout(timeout);
-  }, [streamData, useFallback, hianimeEpisodeId, loading]);
+    return () => clearTimeout(watchdog);
+  }, [streamData, useFallback, hianimeEpisodeId, loading, reloadKey]);
 
   // ── Auto-next countdown ───────────────────────────────────────────────────
   useEffect(() => {
