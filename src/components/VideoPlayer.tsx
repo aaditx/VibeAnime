@@ -65,6 +65,9 @@ export default function VideoPlayer({
   const [reloadKey, setReloadKey] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
 
+  // Fallback watchdog refs
+  const bufferWatcherRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Auto-play next episode
   const [showAutoNext, setShowAutoNext] = useState(false);
   const [countdown, setCountdown] = useState(AUTO_NEXT_COUNTDOWN);
@@ -158,29 +161,6 @@ export default function VideoPlayer({
     router.prefetch(nextEpUrl);
   }, [streamData, hasNextEp, nextEpUrl, router, episodeNumber, hianimeEpisodeId]);
 
-
-  // ── Ultimate Watchdog Timer (Netlify Firewall Auto-Bypass) ──────────────
-  useEffect(() => {
-    // If we're not using fallback, and we actually have stream data, start the watchdog
-    if (!hianimeEpisodeId || useFallback || !streamData?.sources?.find(s => s.isM3U8) || loading) return;
-
-    // A strict 8-second global timeout. If the video hasn't passed 0:00 by 8 seconds, 
-    // it's definitively blocked by a network proxy rule. Fallback immediately.
-    const watchdog = setTimeout(() => {
-      try {
-        const p = playerRef.current;
-        // If player is dead, or stuck precisely at 0:00 (hasn't played a single frame)
-        if (!p || !p.getCurrentTime || p.getCurrentTime() <= 0.1) {
-          console.error("[VideoPlayer Watchdog] Player frozen at 0:00. Netlify firewall likely dropped the chunks. Forcing embed override...");
-          setUseFallback(true);
-        }
-      } catch (err) {
-        setUseFallback(true);
-      }
-    }, 8000);
-
-    return () => clearTimeout(watchdog);
-  }, [streamData, useFallback, hianimeEpisodeId, loading, reloadKey]);
 
   // ── Auto-next countdown ───────────────────────────────────────────────────
   useEffect(() => {
@@ -364,16 +344,32 @@ export default function VideoPlayer({
                       playerRef.current.seekTo(t, 'seconds');
                     }
                   }
+                  // Start initial load watchdog
+                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+                  bufferWatcherRef.current = setTimeout(() => {
+                    const ct = playerRef.current?.getCurrentTime() || 0;
+                    if (ct < 1) {
+                      console.log("[VideoPlayer] Player stuck on ready. Forcing embed override...");
+                      setUseFallback(true);
+                    }
+                  }, 8000);
+                }}
+                onStart={() => {
+                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+                }}
+                onBuffer={() => {
+                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+                  bufferWatcherRef.current = setTimeout(() => {
+                    console.log("[VideoPlayer] Buffer timeout. Stream blocked. Forcing embed.");
+                    setUseFallback(true);
+                  }, 8000);
+                }}
+                onBufferEnd={() => {
+                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
                 }}
                 onError={(e: any) => {
                   console.error("ReactPlayer HLS Error:", e);
-                  // Only fallback if the video completely failed to start (e.g., proxy blocked)
-                  // Mid-stream buffering errors will be ignored to let hls.js auto-recover
-                  const currentTime = playerRef.current?.getCurrentTime() || 0;
-                  if (currentTime === 0) {
-                    console.log("[VideoPlayer] Stream failed to initialize, switching to fallback iframe.");
-                    setUseFallback(true);
-                  }
+                  setUseFallback(true);
                 }}
               />
             </div>
