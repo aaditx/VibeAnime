@@ -49,3 +49,11 @@ next-env.d.ts
 
 # download site (separate project, not part of main repo)
 /download-site
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
