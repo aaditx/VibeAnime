@@ -292,8 +292,9 @@ export default function VideoPlayer({
             key={`fb-${category}-${server}-${episodeNumber}-${reloadKey}`}
             src={iframeUrl}
             title={`${animeTitle} Episode ${episodeNumber}`}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; xr-spatial-tracking; clipboard-write"
             allowFullScreen
+            {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
             className="absolute inset-0 w-full h-full border-0 bg-black z-10"
             sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-fullscreen"
           />
