@@ -3,7 +3,6 @@ import { fetchEpisodeSources } from "@/lib/streaming";
 import { fetchFallbackIframe } from "@/lib/fallback";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

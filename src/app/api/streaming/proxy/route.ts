@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
 
 // ─── SSRF allowlist ───────────────────────────────────────────────────────────
 // Only proxy domains that are known streaming CDNs.
