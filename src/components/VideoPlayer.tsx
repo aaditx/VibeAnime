@@ -6,8 +6,6 @@ import Hls from "hls.js";
 import { Maximize2, Film, RefreshCw, MonitorPlay, Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
-import dynamic from 'next/dynamic';
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 // const DOWNLOADER_URL =
 //   process.env.NEXT_PUBLIC_DOWNLOADER_URL ?? "http://localhost:3001";
@@ -55,7 +53,9 @@ export default function VideoPlayer({
   totalEpisodes,
 }: VideoPlayerProps) {
   const router = useRouter();
-  const playerRef = useRef<any>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [server, setServer] = useState<Server>("hd-1");
   const [category, setCategory] = useState<Category>("sub");
   const [streamData, setStreamData] = useState<StreamSources | null>(null);
@@ -63,7 +63,6 @@ export default function VideoPlayer({
   const [useFallback, setUseFallback] = useState(false);
   const [hlsError, setHlsError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [isBuffering, setIsBuffering] = useState(false);
 
   // Fallback watchdog refs
   const bufferWatcherRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,9 +103,6 @@ export default function VideoPlayer({
         `?episodeId=${encodeURIComponent(hianimeEpisodeId!)}` +
         `&server=${server}&category=${category}`;
 
-      let isSuccess = false;
-      let hasSources = false;
-
       try {
         const r = await fetch(url);
         const data: StreamSources = await r.json();
@@ -120,30 +116,25 @@ export default function VideoPlayer({
             setTimeout(fetchSources, 1500);
             return;
           }
+          // All retries exhausted — use fallback embed
           setStreamData(data);
           setUseFallback(true);
-          isSuccess = true;
         } else {
           setStreamData(data);
-          hasSources = true;
-          isSuccess = true;
         }
       } catch (err) {
-        if (!cancelled) {
-          if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`[VideoPlayer] Fetch failed, retrying (${retryCount}/${maxRetries})...`);
-            setTimeout(fetchSources, 1500);
-            return;
-          }
-          setUseFallback(true);
+        if (cancelled) return;
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`[VideoPlayer] Fetch failed, retrying (${retryCount}/${maxRetries})...`);
+          setTimeout(fetchSources, 1500);
+          return;
         }
+        console.error("[VideoPlayer] All retries failed:", err);
+        setUseFallback(true);
       } finally {
-        if (!cancelled && retryCount >= maxRetries) {
-          setLoading(false);
-        } else if (!cancelled && (hasSources || useFallback)) {
-          setLoading(false);
-        }
+        // Always clear loading when we are done (not retrying)
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -151,6 +142,7 @@ export default function VideoPlayer({
 
     return () => { cancelled = true; };
   }, [hianimeEpisodeId, server, category, reloadKey]);
+
 
   // ── Prefetch next episode sources ─────────────────────────────────────────
   useEffect(() => {
@@ -189,13 +181,145 @@ export default function VideoPlayer({
   // const handleDownload = useCallback(() => { ... }, [...]);
 
   const handleFullscreen = useCallback(() => {
-    const el = playerRef.current?.getInternalPlayer() as HTMLVideoElement | undefined;
-    if (el && el.requestFullscreen) {
-      el.requestFullscreen();
+    // Target the outermost player container so custom controls remain visible
+    const el: any = containerRef.current;
+    if (!el) return;
+
+    const isFullscreen = document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement;
+
+    if (isFullscreen) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
+    } else {
+      if (el.requestFullscreen) {
+        el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      } else if (el.mozRequestFullScreen) {
+        el.mozRequestFullScreen();
+      } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+      }
     }
   }, []);
 
+  // ── HLS.js direct attachment ──────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    const m3u8Source = streamData?.sources?.find(s => s.isM3U8);
+    if (!video || !m3u8Source || useFallback || loading) return;
+
+    const proxyUrl =
+      `/api/streaming/proxy` +
+      `?url=${encodeURIComponent(m3u8Source.url)}` +
+      `&referer=${encodeURIComponent(streamData?.headers?.Referer || "https://hianime.to/")}`;
+
+    const switchToFallback = () => {
+      if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+      setUseFallback(true);
+    };
+
+    const startWatchdog = (label: string) => {
+      if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+      bufferWatcherRef.current = setTimeout(() => {
+        console.warn(`[VideoPlayer] Watchdog: ${label} — switching to embed.`);
+        switchToFallback();
+      }, 7000);
+    };
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        fragLoadingMaxRetry: 1,
+        manifestLoadingMaxRetry: 1,
+        levelLoadingMaxRetry: 1,
+        fragLoadingRetryDelay: 500,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(proxyUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        startWatchdog("manifest loaded but no playback");
+        video.play().catch(() => { });
+        // Restore saved position
+        const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
+        if (saved) {
+          const t = parseFloat(saved);
+          if (!isNaN(t) && t > 5) video.currentTime = t;
+        }
+      });
+
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        console.error("[VideoPlayer] HLS error:", data.type, data.details, data.fatal);
+        if (data.fatal) switchToFallback();
+      });
+
+      return () => {
+        if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+        hls.destroy();
+        hlsRef.current = null;
+      };
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS (Safari)
+      video.src = proxyUrl;
+      video.load();
+      video.play().catch(() => { });
+    } else {
+      // HLS not supported at all — go straight to embed
+      switchToFallback();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamData, useFallback, loading]);
+
+  // ── Video element event handlers ──────────────────────────────────────────
+  const handleVideoPlaying = useCallback(() => {
+    if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+  }, []);
+
+  const handleVideoWaiting = useCallback(() => {
+    if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
+    bufferWatcherRef.current = setTimeout(() => {
+      console.warn("[VideoPlayer] Buffer timeout — switching to embed.");
+      setUseFallback(true);
+    }, 7000);
+  }, []);
+
+  const handleVideoTimeUpdate = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const currentTime = video.currentTime;
+    const duration = video.duration;
+    if (Math.round(currentTime) % 5 === 0 && currentTime > 5) {
+      localStorage.setItem(STORAGE_KEY(animeId, episodeNumber), String(currentTime));
+    }
+    if (hasNextEp && duration > 0) {
+      const remaining = duration - currentTime;
+      setShowAutoNext(remaining <= AUTO_NEXT_THRESHOLD && remaining > 0);
+    }
+  }, [animeId, episodeNumber, hasNextEp]);
+
+  const handleVideoEnded = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY(animeId, episodeNumber));
+    if (hasNextEp) router.push(nextEpUrl);
+  }, [animeId, episodeNumber, hasNextEp, router, nextEpUrl]);
+
+  const handleVideoError = useCallback(() => {
+    console.error("[VideoPlayer] <video> error — switching to embed.");
+    setUseFallback(true);
+  }, []);
+
   const handleReload = useCallback(() => {
+    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
     setUseFallback(false);
     setHlsError(false);
     setStreamData(null);
@@ -212,12 +336,12 @@ export default function VideoPlayer({
   const iframeUrl = useFallback ? guaranteedFallback() : null;
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all flex flex-col">
+    <div ref={containerRef} className="w-full max-h-screen rounded-2xl overflow-hidden bg-black shadow-[0_0_40px_rgba(232,0,45,0.03)] border border-white/5 transition-all flex flex-col">
 
 
 
       {/* ── Player area ── */}
-      <div className="relative w-full bg-[#050505]" style={{ aspectRatio: "16/9" }}>
+      <div className="relative w-full bg-[#050505] flex-1 min-h-0" style={{ aspectRatio: "16/9" }}>
 
         {/* Unindexed / Placeholder State (Cinematic) */}
         {!hasSource && (
@@ -280,101 +404,39 @@ export default function VideoPlayer({
           />
         )}
 
-        {/* ReactPlayer Video */}
-        {hasSource && !loading && !useFallback && streamData?.sources?.find((s) => s.isM3U8) && (() => {
-          const Player: any = ReactPlayer;
-          return (
-            <div className="absolute inset-0 w-full h-full z-10 bg-black">
-              {/* @ts-ignore */}
-              <Player
-                ref={playerRef}
-                url={`/api/streaming/proxy?url=${encodeURIComponent(streamData.sources.find(s => s.isM3U8)!.url)}&referer=${encodeURIComponent(streamData.headers?.Referer || "https://hianime.to/")}`}
-                width="100%"
-                height="100%"
-                playing={true}
-                controls={true}
-                config={{
-                  file: {
-                    forceHLS: true,
-                    attributes: {
-                      crossOrigin: 'anonymous',
-                    },
-                    tracks: streamData?.subtitles
-                      ?.filter((s) => !s.url.toLowerCase().includes("thumbnail"))
-                      .map((sub, i) => {
-                        const isEng = sub.lang.toLowerCase().includes("english");
-                        return {
-                          kind: 'subtitles',
-                          src: sub.url,
-                          srcLang: sub.lang.slice(0, 2).toLowerCase(),
-                          label: sub.lang,
-                          default: isEng && i === 0
-                        };
-                      }) || []
-                  }
-                } as any}
-                onProgress={(state: any) => {
-                  const currentTime = state.playedSeconds;
-                  const duration = playerRef.current?.getDuration() || 0;
+        {/* Direct HLS.js Video Player */}
+        {hasSource && !loading && !useFallback && streamData?.sources?.find(s => s.isM3U8) && (
+          <div className="absolute inset-0 w-full h-full z-10 bg-black">
+            <video
+              ref={videoRef}
+              controls
+              autoPlay
+              className="w-full h-full"
+              crossOrigin="anonymous"
+              onPlaying={handleVideoPlaying}
+              onWaiting={handleVideoWaiting}
+              onTimeUpdate={handleVideoTimeUpdate}
+              onEnded={handleVideoEnded}
+              onError={handleVideoError}
+            >
+              {/* Subtitle tracks injected directly into <video> */}
+              {(streamData.subtitles ?? [])
+                .filter(s => !s.url.toLowerCase().includes("thumbnail"))
+                .map((sub, i) => (
+                  <track
+                    key={sub.lang + i}
+                    kind="subtitles"
+                    src={sub.url}
+                    srcLang={sub.lang.slice(0, 2).toLowerCase()}
+                    label={sub.lang}
+                    default={i === 0 && sub.lang.toLowerCase().includes("english")}
+                  />
+                ))
+              }
+            </video>
+          </div>
+        )}
 
-                  if (Math.round(currentTime) % 5 === 0 && currentTime > 5) {
-                    localStorage.setItem(STORAGE_KEY(animeId, episodeNumber), String(currentTime));
-                  }
-
-                  if (hasNextEp && duration > 0) {
-                    const remaining = duration - currentTime;
-                    if (remaining <= AUTO_NEXT_THRESHOLD && remaining > 0) {
-                      setShowAutoNext(true);
-                    } else {
-                      setShowAutoNext(false);
-                    }
-                  }
-                }}
-                onEnded={() => {
-                  localStorage.removeItem(STORAGE_KEY(animeId, episodeNumber));
-                  if (hasNextEp) {
-                    router.push(nextEpUrl);
-                  }
-                }}
-                onReady={() => {
-                  const saved = localStorage.getItem(STORAGE_KEY(animeId, episodeNumber));
-                  if (saved && playerRef.current) {
-                    const t = parseFloat(saved);
-                    if (!isNaN(t) && t > 5) {
-                      playerRef.current.seekTo(t, 'seconds');
-                    }
-                  }
-                  // Start initial load watchdog
-                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
-                  bufferWatcherRef.current = setTimeout(() => {
-                    const ct = playerRef.current?.getCurrentTime() || 0;
-                    if (ct < 1) {
-                      console.log("[VideoPlayer] Player stuck on ready. Forcing embed override...");
-                      setUseFallback(true);
-                    }
-                  }, 8000);
-                }}
-                onStart={() => {
-                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
-                }}
-                onBuffer={() => {
-                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
-                  bufferWatcherRef.current = setTimeout(() => {
-                    console.log("[VideoPlayer] Buffer timeout. Stream blocked. Forcing embed.");
-                    setUseFallback(true);
-                  }, 8000);
-                }}
-                onBufferEnd={() => {
-                  if (bufferWatcherRef.current) clearTimeout(bufferWatcherRef.current);
-                }}
-                onError={(e: any) => {
-                  console.error("ReactPlayer HLS Error:", e);
-                  setUseFallback(true);
-                }}
-              />
-            </div>
-          );
-        })()}
 
         {/* Premium Auto-Next Overlay */}
         {hasSource && !loading && !useFallback && showAutoNext && hasNextEp && (
