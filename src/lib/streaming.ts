@@ -17,9 +17,8 @@ export { extractHiAnimeEpId, buildMegaplayUrl };
 // Singleton scraper — in-process HiAnime scraper
 const hianime = new HiAnime.Scraper();
 
-// Fallback REST API base URL (can be overridden with your own self-hosted instance)
-const HIANIME_API =
-  process.env.HIANIME_API_URL ?? "https://aniwatch-api.vercel.app";
+// Fallback REST API base URL (hardcoded to bypass broken self-hosted instance)
+const HIANIME_API = "https://aniwatch-api.vercel.app";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -263,31 +262,18 @@ export const fetchEpisodesForAnime = unstable_cache(
 /**
  * Internal helper: try the aniwatch in-process scraper for a given server/category.
  * Returns null on failure or empty results.
+ *
+ * NOTE: The in-process scraper fails in production (can't reach hianimez.to
+ * to decrypt video URLs). It is intentionally disabled for episode sources to
+ * avoid 6-8s of wasted latency before falling through to the REST API.
+ * It is only kept here for search/episodes which work fine.
  */
 async function tryScraperSources(
-  episodeId: string,
-  server: "hd-1" | "hd-2",
-  category: "sub" | "dub" | "raw"
+  _episodeId: string,
+  _server: "hd-1" | "hd-2",
+  _category: "sub" | "dub" | "raw"
 ): Promise<Omit<EpisodeSources, "megaplayUrl"> | null> {
-  try {
-    const result = await hianime.getEpisodeSources(episodeId, server, category);
-    const sources = (result.sources ?? []).map((s) => ({
-      url: s.url,
-      quality: s.quality,
-      isM3U8: s.isM3U8 ?? s.url.includes(".m3u8"),
-    }));
-    if (sources.length > 0) {
-      return {
-        sources,
-        subtitles: ((result as any).tracks ?? result.subtitles ?? [])
-          .filter((s: any) => s.lang && s.lang.toLowerCase() !== "thumbnails")
-          .map((s: any) => ({ url: s.url, lang: s.lang })),
-        headers: (result.headers as Record<string, string>) ?? {},
-      };
-    }
-  } catch {
-    // fall through
-  }
+  // Scraper disabled for episode sources — always use REST API which is reliable.
   return null;
 }
 
@@ -300,30 +286,38 @@ async function tryApiSources(
   server: "hd-1" | "hd-2",
   category: "sub" | "dub" | "raw"
 ): Promise<Omit<EpisodeSources, "megaplayUrl"> | null> {
-  try {
-    const params = new URLSearchParams({ animeEpisodeId: episodeId, server, category });
-    const res = await fetch(`${HIANIME_API}/api/v2/hianime/episode/sources?${params}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const data = json?.data ?? {};
-    const sources = (data.sources ?? []).map((s: { url: string; quality?: string; isM3U8?: boolean }) => ({
-      url: s.url,
-      quality: s.quality,
-      isM3U8: s.isM3U8 ?? s.url.includes(".m3u8"),
-    }));
-    if (sources.length > 0) {
-      return {
-        sources,
-        subtitles: (data.tracks ?? data.subtitles ?? [])
-          .filter((s: { lang?: string }) => s.lang && s.lang.toLowerCase() !== "thumbnails")
-          .map((s: { url?: string; lang?: string }) => ({ url: s.url ?? "", lang: s.lang ?? "" })),
-        headers: (data.headers as Record<string, string>) ?? {},
-      };
+  const tryServer = async (srv: "hd-1" | "hd-2") => {
+    try {
+      const params = new URLSearchParams({ animeEpisodeId: episodeId, server: srv, category });
+      const res = await fetch(`${HIANIME_API}/api/v2/hianime/episode/sources?${params}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      const data = json?.data ?? {};
+      const sources = (data.sources ?? []).map((s: { url: string; quality?: string; isM3U8?: boolean }) => ({
+        url: s.url,
+        quality: s.quality,
+        isM3U8: s.isM3U8 ?? s.url.includes(".m3u8"),
+      }));
+      if (sources.length > 0) {
+        return {
+          sources,
+          subtitles: (data.tracks ?? data.subtitles ?? [])
+            .filter((s: { lang?: string }) => s.lang && s.lang.toLowerCase() !== "thumbnails")
+            .map((s: { url?: string; lang?: string }) => ({ url: s.url ?? "", lang: s.lang ?? "" })),
+          headers: (data.headers as Record<string, string>) ?? {},
+        };
+      }
+    } catch {
+      // fall through
     }
-  } catch {
-    // fall through
-  }
-  return null;
+    return null;
+  };
+
+  // Try requested server first, then cascade to the other
+  const primary = await tryServer(server);
+  if (primary) return primary;
+  const secondary: "hd-1" | "hd-2" = server === "hd-1" ? "hd-2" : "hd-1";
+  return tryServer(secondary);
 }
 
 /**
@@ -360,25 +354,13 @@ export async function fetchEpisodeSources(
 
   // ── Primary server requested by caller ──
   const primaryServer: "hd-1" | "hd-2" = server === "hd-2" ? "hd-2" : "hd-1";
-  const secondaryServer: "hd-1" | "hd-2" = primaryServer === "hd-1" ? "hd-2" : "hd-1";
 
-  // 1. Try in-process scraper — primary server
-  const scraperPrimary = await tryScraperSources(episodeId, primaryServer, category);
-  if (scraperPrimary) return { ...scraperPrimary, megaplayUrl };
+  // 1. Try REST API (scraper disabled — fails in production; no JS decryption available)
+  //    tryApiSources internally cascades to the secondary server if primary fails.
+  const apiResult = await tryApiSources(episodeId, primaryServer, category);
+  if (apiResult) return { ...apiResult, megaplayUrl };
 
-  // 2. Try in-process scraper — secondary server (automatic cascade)
-  const scraperSecondary = await tryScraperSources(episodeId, secondaryServer, category);
-  if (scraperSecondary) return { ...scraperSecondary, megaplayUrl };
-
-  // 3. Try REST API — primary server
-  const apiPrimary = await tryApiSources(episodeId, primaryServer, category);
-  if (apiPrimary) return { ...apiPrimary, megaplayUrl };
-
-  // 4. Try REST API — secondary server
-  const apiSecondary = await tryApiSources(episodeId, secondaryServer, category);
-  if (apiSecondary) return { ...apiSecondary, megaplayUrl };
-
-  // 5. All HLS paths failed — return empty sources but valid megaplay URL
+  // 2. All HLS paths failed — return empty sources but valid megaplay URL
   console.warn(`[streaming] All HLS sources failed for ${episodeId} (${server}/${category}). Using megaplay fallback.`);
   return { sources: [], subtitles: [], headers: {}, megaplayUrl };
 }

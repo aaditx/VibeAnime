@@ -1,5 +1,4 @@
-const HIANIME_API =
-    process.env.HIANIME_API_URL ?? "https://aniwatch-api.vercel.app";
+const HIANIME_API = "https://aniwatch-api.vercel.app";
 
 /**
  * Build a guaranteed fallback iframe URL for an episode.
@@ -31,13 +30,15 @@ export async function fetchFallbackIframe(
         console.error("[fallback] aniwatch API iframe fetch failed", e);
     }
 
-    // 2. Build a megaplay.buzz embed from the numeric episode ID — always works
+    // 2. Build a megaplay embed from the numeric episode ID via /embed-proxy/ rewrite
+    //    Using /embed-proxy/ instead of https://megaplay.buzz/ so it routes through
+    //    the Next.js rewrite rule, avoiding CORS/CSP issues with direct embeds.
     const epNumericId = episodeId.match(/ep=(\d+)/)?.[1];
     if (epNumericId) {
-        return `https://megaplay.buzz/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`;
+        return `/embed-proxy/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`;
     }
 
     // 3. Generic megaplay embed using the slug directly (last resort)
     const slug = episodeId.split("?")[0];
-    return `https://megaplay.buzz/stream/s-2/${slug}/sub`;
+    return `/embed-proxy/stream/s-2/${slug}/sub`;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchEpisodeSources } from "@/lib/streaming";
 import { fetchFallbackIframe } from "@/lib/fallback";
+import { extractHiAnimeEpId, buildMegaplayUrl } from "@/lib/streaming-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
     const responseData = {
       ...data,
       subtitles: mergedSubtitles,
-      proxyBaseUrl: process.env.HIANIME_API_URL || "https://aniwatch-api.vercel.app"
+      proxyBaseUrl: "https://aniwatch-api.vercel.app"
     };
 
     // data.megaplayUrl is always set inside fetchEpisodeSources.
@@ -81,13 +82,13 @@ export async function GET(req: NextRequest) {
     console.error("[/api/streaming/sources]", err);
     // Even if everything throws, build an iframe from the ep ID
     const fallbackIframe = await fetchFallbackIframe(episodeId, server, category).catch(() => null);
-    // Build megaplay URL from the numeric ep ID in episodeId
-    const epNumericId = episodeId.match(/ep=(\d+)/)?.[1];
+    // Build megaplay URL from the numeric ep ID using the shared utility
+    const epNumericId = extractHiAnimeEpId(episodeId);
     const megaplayUrl = epNumericId
-      ? `/embed-proxy/stream/s-2/${epNumericId}/${category === "dub" ? "dub" : "sub"}`
-      : fallbackIframe?.replace("https://megaplay.buzz", "/embed-proxy") ?? "";
+      ? buildMegaplayUrl(epNumericId, category === "dub")
+      : fallbackIframe ?? "";
     return NextResponse.json(
-      { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl, proxyBaseUrl: process.env.HIANIME_API_URL || "https://aniwatch-api.vercel.app" },
+      { sources: [], subtitles: [], headers: {}, megaplayUrl, fallbackIframe: fallbackIframe ?? megaplayUrl, proxyBaseUrl: "https://aniwatch-api.vercel.app" },
       { status: 200, headers: CORS }
     );
   }
